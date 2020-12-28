@@ -46,7 +46,7 @@ struct Angles {
 };
 
 struct Foot {
-    Eigen::Vector3d p{10,0,0};
+    Eigen::Vector3d p{10.,0.,0.};
     double angle=M_PI;
     double len = FOOT_LEN;
     void set_angles( double f ){
@@ -58,7 +58,7 @@ struct Foot {
 
 struct Leg
 {
-    Eigen::Vector3d p{10,0,0};
+    Eigen::Vector3d p{10.,0.,0.};
     double angle=M_PI;
     double len = LEG_LEN;
     Foot foot;
@@ -73,7 +73,7 @@ struct Leg
 };
 struct Shoulder
 {
-    Eigen::Vector3d tr={0,0,0};
+    Eigen::Vector3d tr={0.,0.,0.};
     Eigen::Vector3d p;
     double angle = M_PI;
     double len = SHOULDER_LEN;
@@ -92,8 +92,8 @@ struct Shoulder
 };
 
 struct Head {
-    Eigen::Vector3d tr={0,0.1,0};
-    Eigen::Quaterniond q{1,0,0,0};
+    Eigen::Vector3d tr={0.,0.1,0.};
+    Eigen::Quaterniond q{1.,0.,0.,0.};
     double angle;
     void set_angles( double head ){
         angle = head;
@@ -103,8 +103,8 @@ struct Head {
 };
 
 struct Body {
-    Eigen::Vector3d tr={0,0,0};
-    Eigen::Quaterniond q{1,0,0,0};
+    Eigen::Vector3d tr={0.,0.,0.};
+    Eigen::Quaterniond q{1.,0.,0.,0.};
 
     std::map<int,Shoulder> shoulders;
     Head head;
@@ -127,6 +127,8 @@ public:
     }
 
     void set_foot_final( Eigen::Vector3d p ){
+        if( p[2] > -0.06 )
+            p[2] = -0.06;
         m_foot_final = p;
     }
 
