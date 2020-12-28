@@ -35,6 +35,8 @@ public:
 
     enut::Angles get_angles() override;
     void set_angles( enut::Angles, double speed ) override;
+    void turn_off() override;
+    void turn_on() override;
 
 
 private:

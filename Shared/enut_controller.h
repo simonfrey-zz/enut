@@ -7,6 +7,7 @@
 #include "IPM_Control/IPM_PID.h"
 #include "IPM_SCPI++/SCPIClassAdaptor.h"
 #include "IPM_Parameter/IPM_SectionedParmFile.h"
+#include <mutex>
 
 class Enut_Controller: public ipm::modules::module, public SCPIClassAdaptor<Enut_Controller>
 {
@@ -52,6 +53,8 @@ private:
     ceres::Solver::Summary summary;
 
     void reset_ceres_angles();
+
+    std::mutex m_mutex;
 
 };
 

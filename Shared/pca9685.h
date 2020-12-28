@@ -23,6 +23,9 @@ public:
 
     double get_bin_period();
 
+    void pca_sleep();
+    void pca_init();
+
 private:
     int m_fd;
     int m_i2c_address;

@@ -47,17 +47,14 @@ PCA9685::PCA9685( int i2c_dev, int i2c_address ) :
     if( m_fd < 0 )
         return;
 
-    set_all_channels( 0, 0 );
-    i2c_write( MODE2, 0x04 ); // totem pole
-    i2c_write( MODE1, 0x01 ); // allcall
-    setPWMFreq(50);
+    pca_init();
 
 }
 
 PCA9685::~PCA9685()
 {
     if( m_fd > 0 ){
-        i2c_write(MODE1, 0x10); //sleep
+        pca_sleep();
         close(m_fd);
     }
     m_fd = -1;
@@ -140,3 +137,16 @@ int PCA9685::set_all_channels(int on, int off)
 }
 
 double PCA9685::get_bin_period(){return m_bin_period;}
+
+void PCA9685::pca_sleep()
+{
+    i2c_write(MODE1, 0x10); //sleep
+}
+
+void PCA9685::pca_init()
+{
+    set_all_channels( 0, 0 );
+    i2c_write( MODE2, 0x04 ); // totem pole
+    i2c_write( MODE1, 0x01 ); // allcall
+    setPWMFreq(50);
+}

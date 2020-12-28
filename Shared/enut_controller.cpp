@@ -46,12 +46,14 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
 bool Enut_Controller::set_height(double height)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_height = std::min( std::max( height, ENUT_MIN_HEIGHT), ENUT_MAX_HEIGHT);
     return true;
 }
 
 bool Enut_Controller::set_attitude(std::string a)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     PT_INFO("set attitude " << a );
     m_attitude = enut::Attitude_from_string(a);
     return true;
@@ -59,6 +61,7 @@ bool Enut_Controller::set_attitude(std::string a)
 
 bool Enut_Controller::set_body_rpy(double roll, double pitch, double yaw)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_body_roll = roll;
     m_body_pitch = pitch;
     m_body_yaw = yaw;
@@ -72,64 +75,103 @@ void Enut_Controller::loop()
 
     double speed = 0.2;
 
-    while (helper_in_normal_operation()) {
+    enut::Attitude prev_attitude = m_attitude;
+    p3t::PTS_Timer<p3t::PTS_TSCount> timer;
+    timer.start();
+
+    while (helper_in_normal_operation() ) {
+
 
         p3t::sleep(dt);
-        if( speed > 1 )
-            speed = 1;
-        if( speed < 0.2 )
-            speed = 0.2;
 
-        auto imu = m_imu->get_imu();
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
 
-        if( std::abs(imu.pitch) > 60 || std::abs(imu.roll) > 60 ){
-            m_attitude = enut::relax;
-        }
+            if( prev_attitude != m_attitude ){
 
-        if( m_attitude == enut::relax ){
-            speed = 0.2;
-            enut::Angles def_angles;
-            m_angles->set_angles( def_angles, speed );
-            reset_ceres_angles();
-            continue;
-        }
-        else if( m_attitude == enut::standing ){
+                PT_INFO("switch to state " << enut::Attitude_to_string(m_attitude) );
+
+                timer.restart();
+
+                if( prev_attitude == enut::relax ){
+                    m_angles->turn_on();
+                    enut::Angles def_angles;
+                    m_angles->set_angles( def_angles, speed );
+                    p3t::sleep(1);
+                }
+            }
+            prev_attitude = m_attitude;
+
+            if( speed > 1 )
+                speed = 1;
+            if( speed < 0.2 )
+                speed = 0.2;
 
             auto imu = m_imu->get_imu();
 
-            const double pid_roll = m_pid_roll->control( 0, sin(imu.roll*M_PI/180.0)*LEGS_SPAN_X*0.5 );
-            const double pid_pitch = m_pid_pitch->control( 0, sin(imu.pitch*M_PI/180.0)*LEGS_SPAN_Y*0.5 );
-
-
-            body.head.angle = (90-imu.pitch)*M_PI/180.0;
-
-            // put foot points
-            m_foot_pose[FL] = {0.02,0.03,0};
-            m_foot_pose[FR] = {0.02,0.03,0};
-            m_foot_pose[HR] = {0.02,0,0};
-            m_foot_pose[HL] = {0.02,0,0};
-
-            m_foot_pose[FL][2] -= m_height - pid_roll + pid_pitch;
-            m_foot_pose[FR][2] -= m_height + pid_roll + pid_pitch;
-            m_foot_pose[HR][2] -= m_height + pid_roll - pid_pitch;
-            m_foot_pose[HL][2] -= m_height - pid_roll - pid_pitch;
-
-
-            m_pates_models[FL]->set_foot_final( m_foot_pose[FL] );
-            m_pates_models[FR]->set_foot_final( m_foot_pose[FR] );
-            m_pates_models[HL]->set_foot_final( m_foot_pose[HL] );
-            m_pates_models[HR]->set_foot_final( m_foot_pose[HR] );
-
-            ceres::Solve(options, &problem, &summary);
-
-            m_angles->set_angles( {shoulder_angles[FL], shoulder_angles[FR],shoulder_angles[HL],shoulder_angles[HR],
-                                  leg_angles[FL], leg_angles[FR],leg_angles[HL],leg_angles[HR],
-                                  foot_angles[FL], foot_angles[FR],foot_angles[HL],foot_angles[HR],
-                                  body.head.angle}, speed );
-
-            if( speed < 1 ){
-                speed += 0.005;
+            if( std::abs(imu.pitch) > 60 || std::abs(imu.roll) > 60 ){
+                m_attitude = enut::relax;
+                continue;
             }
+
+            if( m_attitude == enut::relax ){
+                speed = 0.2;
+
+                reset_ceres_angles();
+
+                if( timer.elapsed() > 3 ){
+                    m_angles->turn_off();
+                }
+                else {
+                    enut::Angles def_angles;
+                    m_angles->set_angles( def_angles, speed );
+                }
+
+                continue;
+            }
+            else if( m_attitude == enut::standing ){
+
+                auto imu = m_imu->get_imu();
+
+                const double pid_roll = m_pid_roll->control( sin(m_body_roll)*LEGS_SPAN_X*0.5,
+                                                             sin(imu.roll*M_PI/180.0)*LEGS_SPAN_X*0.5 );
+
+                const double pid_pitch = m_pid_pitch->control( sin(m_body_pitch)*LEGS_SPAN_Y*0.5,
+                                                               sin(imu.pitch*M_PI/180.0)*LEGS_SPAN_Y*0.5 );
+
+
+                body.head.angle = (90-imu.pitch)*M_PI/180.0;
+
+                // put foot points
+                m_foot_pose[FL] = {0.02,0.03,0};
+                m_foot_pose[FR] = {0.02,0.03,0};
+                m_foot_pose[HR] = {0.02,0,0};
+                m_foot_pose[HL] = {0.02,0,0};
+
+
+                m_foot_pose[FL][2] -= m_height - pid_roll + pid_pitch;
+                m_foot_pose[FR][2] -= m_height + pid_roll + pid_pitch;
+                m_foot_pose[HR][2] -= m_height + pid_roll - pid_pitch;
+                m_foot_pose[HL][2] -= m_height - pid_roll - pid_pitch;
+
+
+                m_pates_models[FL]->set_foot_final( m_foot_pose[FL] );
+                m_pates_models[FR]->set_foot_final( m_foot_pose[FR] );
+                m_pates_models[HL]->set_foot_final( m_foot_pose[HL] );
+                m_pates_models[HR]->set_foot_final( m_foot_pose[HR] );
+
+                ceres::Solve(options, &problem, &summary);
+
+                m_angles->set_angles( {shoulder_angles[FL], shoulder_angles[FR],shoulder_angles[HL],shoulder_angles[HR],
+                                       leg_angles[FL], leg_angles[FR],leg_angles[HL],leg_angles[HR],
+                                       foot_angles[FL], foot_angles[FR],foot_angles[HL],foot_angles[HR],
+                                       body.head.angle}, speed );
+
+                if( speed < 1 ){
+                    speed += 0.005;
+                }
+            }
+
         }
 
 

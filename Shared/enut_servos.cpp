@@ -107,6 +107,16 @@ void Enut_Servos::set_angles(enut::Angles a, double speed)
     m_speed = speed;
 }
 
+void Enut_Servos::turn_off()
+{
+    pca_sleep();
+}
+
+void Enut_Servos::turn_on()
+{
+    pca_init();
+}
+
 int Enut_Servos::map(int channel, float angle)
 {
     const float a_min = 0;
