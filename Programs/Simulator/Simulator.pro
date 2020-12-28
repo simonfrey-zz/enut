@@ -22,6 +22,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+include(../../external/IPM_Shared/external/p3t/IPM_SCPI++/IPM_SCPI++.pri)
 include(../../external/IPM_Shared/ModulesChain/Modules.pri)
 include(../../external/IPM_Shared/external/p3t/IPM_Plot/IPM_Plot.pri)
 include(../../external/IPM_Shared/external/p3t/PTS_BinaryIO/PTS_BinaryIO.pri)
@@ -47,16 +48,19 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     ../../Shared/enut.cpp \
-    ../../external/IPM_Shared/external/p3t/IPM_SCPI/IPM_SCPI_Base.cpp \
     ../../external/IPM_Shared/external/p3t/IPM_SCPI/Remote/IPM_SCPI_Remote.cpp \
     ../../Shared/enut_simulator.cpp \
     ../../external/IPM_Shared/IPM_Calibration/ipm_ceres_geometry_fit.cpp \
-    ../../Shared/enut_controller.cpp
+    ../../Shared/enut_controller.cpp \
+    ../../Shared/enut_models.cpp \
+    ../../external/p3t/IPM_SCPI++/ipm_scpippserver/simple_server.cpp \
+    ../../external/p3t/IPM_SCPI++/ipm_scpippserver/simple_server_connection.cpp \
+    ../../external/p3t/IPM_SCPI++/ipm_scpippserver/simple_server_connection_manager.cpp \
+    ../../external/p3t/IPM_SCPI++/ipm_scpipp_server2.cpp \
 
 HEADERS += \
         mainwindow.h \
     ../../Shared/enut.h \
-    ../../external/IPM_Shared/external/p3t/IPM_SCPI/IPM_SCPI_Base.h \
     ../../external/IPM_Shared/external/p3t/IPM_SCPI/Remote/IPM_SCPI_Remote.h \
     ../../Shared/enut_simulator.h \
     ../../Shared/enut_models.h \

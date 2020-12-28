@@ -4,17 +4,19 @@
 #include "ModulesChain/Module.h"
 #include "Shared/enut_ifaces.h"
 #include "ceres/ceres.h"
+#include "IPM_Control/IPM_PID.h"
+#include "IPM_SCPI++/SCPIClassAdaptor.h"
 
-class Enut_Controller: public ipm::modules::module
+class Enut_Controller: public ipm::modules::module, public SCPIClassAdaptor<Enut_Controller>
 {
 public:
     Enut_Controller( enut::imu_iface * imu, enut::angles_iface * angles );
 
-    void set_height( double height );
-    double get_height(){return m_height; }
+    bool set_height( double height );
+    std::pair<bool,double> get_height(){return {true,m_height}; }
 
-    void set_attitude( enut::Attitude a );
-    enut::Attitude get_attitude(){ return m_attitude; }
+    bool set_attitude( std::string a );
+    std::pair<bool, std::string> get_attitude(){ return {true,enut::Attitude_to_string(m_attitude)}; }
 
 
 private:
@@ -26,6 +28,9 @@ private:
 
     std::map<int, Eigen::Vector3d> m_foot_pose;
     std::map<int, enut::Enut_Pate_model*> m_pates_models;
+
+    IPM_PID * m_pid_roll;
+    IPM_PID * m_pid_pitch;
 
     void loop();
 

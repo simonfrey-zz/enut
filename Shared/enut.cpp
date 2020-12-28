@@ -3,10 +3,10 @@
 
 Enut::Enut()
 {
-    body.shoulders[HL].tr = {-0.038,-0.0685,0};
-    body.shoulders[HR].tr = { 0.038,-0.0685,0};
-    body.shoulders[FL].tr = {-0.038, 0.0685,0};
-    body.shoulders[FR].tr = { 0.038, 0.0685,0};
+    body.shoulders[HL].tr = {-LEGS_SPAN_X*0.5,-LEGS_SPAN_Y,0};
+    body.shoulders[HR].tr = { LEGS_SPAN_X*0.5,-LEGS_SPAN_Y,0};
+    body.shoulders[FL].tr = {-LEGS_SPAN_X*0.5, LEGS_SPAN_Y,0};
+    body.shoulders[FR].tr = { LEGS_SPAN_X*0.5, LEGS_SPAN_Y,0};
 
     body.shoulders[HL].mirror = true;
     body.shoulders[HR].mirror = false;

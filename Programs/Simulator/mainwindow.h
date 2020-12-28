@@ -5,6 +5,8 @@
 #include "IPM_Plot/plot3d_interface.h"
 
 #include "ModulesChain/ModuleController.h"
+#include "IPM_SCPI/Remote/IPM_SCPI_Remote.h"
+#include <IPM_SCPI++/ipm_scpipp_server2.h>
 
 namespace Ui {
 class MainWindow;
@@ -52,6 +54,7 @@ private:
 
     IPM_TCPSocket * m_sock;
     IPM_SCPI_Client * m_scpi;
+    SCPIClassAdaptorCollection all_scpis;
 
     void send_values();
 };

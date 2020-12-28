@@ -122,7 +122,7 @@ void Enut_Simulator::loop(){
             fit_gnd.add_points( gp );
             fit_gnd.solve( true);
 
-            body.q = fit_body.get_rotation() * fit_gnd.get_rotation();
+            body.q = fit_gnd.get_rotation() * fit_body.get_rotation().inverse();
 
             // translate body on plane
             Eigen::Vector3d p_offset(0,0,0);
@@ -136,7 +136,7 @@ void Enut_Simulator::loop(){
             roll[1] = 0;
             roll.normalize();
             m_imu_roll = std::acos(roll.dot( Eigen::Vector3d(0,0,1) )) * 180.0 / M_PI;
-            if( roll[0] < 0 )
+            if( roll[0] > 0 )
                 m_imu_roll = -m_imu_roll;
 
             Eigen::Vector3d pitch = body.q._transformVector(Eigen::Vector3d(0,0,1));

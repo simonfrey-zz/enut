@@ -12,9 +12,11 @@
 #define FOOT_LEN 0.064
 #define LEG_LEN 0.055
 #define SHOULDER_LEN 0.024
+#define LEGS_SPAN_X 0.076
+#define LEGS_SPAN_Y 0.137
 
 #define ENUT_MIN_HEIGHT 0.06
-#define ENUT_MAX_HEIGHT 0.14
+#define ENUT_MAX_HEIGHT 0.145
 
 namespace enut {
 
@@ -23,6 +25,8 @@ enum Attitude {
     standing = 10,
 };
 
+std::string Attitude_to_string( Attitude a );
+Attitude Attitude_from_string( std::string a );
 
 struct Angles {
     double angles[13] = {M_PI_2,M_PI_2,M_PI_2,

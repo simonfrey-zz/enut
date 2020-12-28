@@ -3,16 +3,17 @@
 #include "Shared/enut.h"
 
 #include "PTS_Stream/IPM_TCPSocket.h"
-#include "IPM_SCPI/Remote/IPM_SCPI_Remote.h"
 
 #include "Shared/enut_simulator.h"
 #include "Shared/enut_controller.h"
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     m_sock(nullptr),
-    m_scpi(nullptr)
+    m_scpi(nullptr),
+    all_scpis("SCPI_COLLECTION")
 {
     ui->setupUi(this);
 
@@ -20,7 +21,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_p3d->setCameraTranslation({1.5,0.5,0.3} );
     m_p3d->setCameraRotation( {-1,0,-0.1}, {0,0,1});
+
+    //m_p3d->setCameraTranslation({0.5,-1.5,0.3} );
+    //m_p3d->setCameraRotation( {0,1,-0.1}, {0,0,1});
+
     m_p3d->setPointSize( 6 );
+
 
     m_modules = new ipm::modules::controller();
     m_simul = new Enut_Simulator( m_p3d );
@@ -29,12 +35,22 @@ MainWindow::MainWindow(QWidget *parent) :
     m_cont = new Enut_Controller( m_simul, m_simul );
     m_modules->register_module( "l", m_cont );
 
+    // collect all SCPIs
+    all_scpis.addAdaptor( m_cont );
+
+    // scpi server
+    IPM_SCPIpp_Server2 * scpi_server = new IPM_SCPIpp_Server2("scpi_server", all_scpis, 50010, true, false );
+    m_modules->register_module( "l", scpi_server );
+
+
     m_modules->start_module();
 
-    ui->dspHeight->setValue( m_cont->get_height() * 1000 );
+
+    ui->dspHeight->setValue( m_cont->get_height().second * 1000 );
 
     //m_sock = new IPM_TCPSocket( "192.168.0.110", 50010, 3 );
-    //m_scpi = new IPM_SCPI_Client( *m_sock );
+    m_sock = new IPM_TCPSocket( "127.0.0.1", 50010, 3 );
+    m_scpi = new IPM_SCPI_Client( *m_sock );
 }
 
 MainWindow::~MainWindow()
@@ -74,17 +90,20 @@ void MainWindow::on_sbHead_valueChanged(int )
 
 void MainWindow::on_cbAttitude_currentTextChanged(const QString &arg1)
 {
-    if( arg1 == "relax" ){
-        m_cont->set_attitude( enut::relax );
-    }
-    else if( arg1 == "standing" ){
-        m_cont->set_attitude( enut::standing );
-    }
+    m_cont->set_attitude( arg1.toStdString() );
 }
 
 void MainWindow::on_dspHeight_valueChanged(double arg1)
 {
-    m_cont->set_height( arg1*0.001 );
+    if( m_sock && m_sock->get_state() != 0 ){
+        int err(0);
+        std::string cmd = "CTRL:HEIGHT " + p3t::to_string(arg1*0.001);
+        PT_INFO("send " << cmd);
+        std::string ret = m_scpi->command( cmd, &err );
+        if( err ){
+            PT_SEVERE( ret );
+        }
+    }
 }
 
 void MainWindow::send_values()
