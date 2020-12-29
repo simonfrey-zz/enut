@@ -6,6 +6,8 @@ std::string enut::Attitude_to_string(enut::Attitude a){
         return "relax";
     else if( a == standing )
         return "standing";
+    else if( a == walking )
+        return "walking";
     else
         return "relax";
 }
@@ -15,6 +17,8 @@ enut::Attitude enut::Attitude_from_string(std::string a){
         return relax;
     else if( a == "standing" )
         return standing;
+    else if( a == "walking" )
+        return walking;
     else
         return relax;
 }

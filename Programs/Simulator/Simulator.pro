@@ -56,6 +56,8 @@ SOURCES += \
     ../../external/p3t/IPM_SCPI++/ipm_scpippserver/simple_server_connection.cpp \
     ../../external/p3t/IPM_SCPI++/ipm_scpippserver/simple_server_connection_manager.cpp \
     ../../external/p3t/IPM_SCPI++/ipm_scpipp_server2.cpp \
+    ../../Shared/lowpassfilter.cpp \
+    ../../Shared/enut_gait.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -64,7 +66,9 @@ HEADERS += \
     ../../Shared/enut_models.h \
     ../../external/IPM_Shared/IPM_Calibration/ipm_ceres_geometry_fit.h \
     ../../Shared/enut_ifaces.h \
-    ../../Shared/enut_controller.h
+    ../../Shared/enut_controller.h \
+    ../../Shared/lowpassfilter.h \
+    ../../Shared/enut_gait.h
 
 SOURCES *= \
         PTS_BinaryIO/PTS_BinaryIO.cpp \

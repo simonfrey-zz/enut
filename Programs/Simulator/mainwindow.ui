@@ -27,13 +27,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>250</width>
+          <width>350</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>400</width>
+          <width>450</width>
           <height>16777215</height>
          </size>
         </property>
@@ -137,6 +137,11 @@
           <item>
            <property name="text">
             <string>standing</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>walking</string>
            </property>
           </item>
          </widget>

@@ -23,6 +23,7 @@ namespace enut {
 enum Attitude {
     relax = 0,
     standing = 10,
+    walking = 20,
 };
 
 std::string Attitude_to_string( Attitude a );
