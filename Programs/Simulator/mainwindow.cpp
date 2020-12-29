@@ -11,10 +11,11 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    m_sock(nullptr),
-    m_scpi(nullptr),
     all_scpis("SCPI_COLLECTION")
 {
+
+    m_db.scan("./config.cnf");
+
     ui->setupUi(this);
 
     m_p3d = ui->widget->getPlot3dInterface("enut" );
@@ -32,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_simul = new Enut_Simulator( m_p3d );
     m_modules->register_module( "l", m_simul );
 
-    m_cont = new Enut_Controller( m_simul, m_simul );
+    m_cont = new Enut_Controller( m_db, m_simul, m_simul );
     m_modules->register_module( "l", m_cont );
 
     // collect all SCPIs
@@ -48,16 +49,22 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->dspHeight->setValue( m_cont->get_height().second * 1000 );
 
-    //m_sock = new IPM_TCPSocket( "192.168.0.110", 50010, 3 );
-    m_sock = new IPM_TCPSocket( "127.0.0.1", 50010, 3 );
-    m_scpi = new IPM_SCPI_Client( *m_sock );
+    m_sock.push_back( new IPM_TCPSocket( "127.0.0.1", 50010, 3 ) );
+    m_scpi.push_back( new IPM_SCPI_Client( *m_sock[0] ) );
+
+    /*
+    m_sock.push_back( new IPM_TCPSocket( "192.168.0.110", 50010, 3 ) );
+    m_scpi.push_back( new IPM_SCPI_Client( *m_sock[1] ) );
+    */
 }
 
 MainWindow::~MainWindow()
 {
     delete m_modules;
-    delete m_scpi;
-    delete m_sock;
+    for( auto &s : m_scpi )
+        delete s;
+    for( auto &s : m_sock )
+        delete s;
     delete ui;
 }
 
@@ -69,7 +76,6 @@ void MainWindow::on_sbShoulders_valueChanged(int)
     const double h = (double)ui->sbHead->value() * M_PI/180.;
     m_simul->dbg_set_angles( s, s, s, s, l, l, l, l, f, f, f, f, h );
     //enut->draw();
-    send_values();
 }
 
 void MainWindow::on_sbLegs_valueChanged(int )
@@ -90,40 +96,12 @@ void MainWindow::on_sbHead_valueChanged(int )
 
 void MainWindow::on_cbAttitude_currentTextChanged(const QString &arg1)
 {
-    m_cont->set_attitude( arg1.toStdString() );
+    send_cmd( "CTRL:ATTITUDE " + arg1.toStdString() );
 }
 
 void MainWindow::on_dspHeight_valueChanged(double arg1)
 {
-    if( m_sock && m_sock->get_state() != 0 ){
-        int err(0);
-        std::string cmd = "CTRL:HEIGHT " + p3t::to_string(arg1*0.001);
-        PT_INFO("send " << cmd);
-        std::string ret = m_scpi->command( cmd, &err );
-        if( err ){
-            PT_SEVERE( ret );
-        }
-    }
-}
-
-void MainWindow::send_values()
-{
-    /*
-    if( m_sock && m_sock->get_state() != 0 ){
-        int err(0);
-        std::string cmd = "JOINT:ANGLES \"[ ";
-        auto angles = enut->get_angles();
-        for( unsigned i = 0; i < angles.size(); i++ ){
-            cmd += p3t::to_string( angles[i]*180.0 / M_PI ) + " ";
-        }
-        cmd += "]\"";
-        PT_INFO("send " << cmd);
-        std::string ret = m_scpi->command( cmd, &err );
-        if( err ){
-            PT_SEVERE( ret );
-        }
-    }
-    */
+    send_cmd( "CTRL:HEIGHT " + p3t::to_string(arg1*0.001) );
 }
 
 
@@ -137,4 +115,39 @@ void MainWindow::on_dspGroundPitch_valueChanged(double )
 {
     m_simul->set_ground_angles( ui->dspGroundRoll->value() * M_PI/180.,
                                 ui->dspGroundPitch->value() * M_PI/180.);
+}
+
+void MainWindow::send_cmd(std::string cmd)
+{
+    PT_INFO("send " << cmd);
+    for(unsigned i = 0; i < m_sock.size(); i++ ){
+        if( m_sock[i] && m_sock[i]->get_state() != 0 ){
+            int err(0);
+            std::string ret = m_scpi[i]->command( cmd, &err );
+            if( err ){
+                PT_SEVERE( ret );
+            }
+        }
+    }
+}
+
+void MainWindow::on_dspBodyRoll_valueChanged(double)
+{
+    send_cmd( "CTRL:RPY " + p3t::to_string(ui->dspBodyRoll->value()*M_PI/180.) + " "
+               + p3t::to_string(ui->dspBodyPitch->value()*M_PI/180.) + " "
+               + p3t::to_string(ui->dspBodyYaw->value()*M_PI/180.) );
+}
+
+void MainWindow::on_dspBodyPitch_valueChanged(double)
+{
+    send_cmd( "CTRL:RPY " + p3t::to_string(ui->dspBodyRoll->value()*M_PI/180.) + " "
+               + p3t::to_string(ui->dspBodyPitch->value()*M_PI/180.) + " "
+               + p3t::to_string(ui->dspBodyYaw->value()*M_PI/180.) );
+}
+
+void MainWindow::on_dspBodyYaw_valueChanged(double)
+{
+    send_cmd( "CTRL:RPY " + p3t::to_string(ui->dspBodyRoll->value()*M_PI/180.) + " "
+               + p3t::to_string(ui->dspBodyPitch->value()*M_PI/180.) + " "
+               + p3t::to_string(ui->dspBodyYaw->value()*M_PI/180.) );
 }

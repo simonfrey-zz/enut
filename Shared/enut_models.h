@@ -122,14 +122,19 @@ struct Body {
 class Enut_Pate_model {
 public:
 
-    Enut_Pate_model( const Eigen::Vector3d foot_final ) : m_foot_final( foot_final ){
+    Enut_Pate_model( const bool mirror, const Eigen::Vector3d foot_final, const Eigen::Vector3d shoulder_final ) :
+        m_mirror(mirror),
+        m_foot_final( foot_final ),
+        m_shoulder_final( shoulder_final )
+    {
 
     }
 
-    void set_foot_final( Eigen::Vector3d p ){
-        if( p[2] > -0.06 )
-            p[2] = -0.06;
-        m_foot_final = p;
+    void set_foot_final( Eigen::Vector3d f, Eigen::Vector3d s ){
+        if( f[2] > -0.06 )
+            f[2] = -0.06;
+        m_foot_final = f;
+        m_shoulder_final = s;
     }
 
     // return residuals
@@ -156,6 +161,9 @@ public:
 
         // shoulder angle
         T aa_shoulder[3]={T(0),*shoulder, T(0) };
+        if( m_mirror ){
+            aa_shoulder[1] = T(M_PI)-aa_shoulder[1];
+        }
         T p_shoulder[3] = {T(SHOULDER_LEN), T(0), T(0)};
         T p_shoulder2[3];
         ceres::AngleAxisRotatePoint( aa_shoulder, p_shoulder, p_shoulder2 ); // (4)
@@ -176,15 +184,17 @@ public:
         p_foot_end[1] = p_foot4[1] + p_leg4[1]; // (8)
         p_foot_end[2] = p_foot4[2] + p_leg4[2]; // (8)
 
-        residuals[0] = p_foot_end[0] - T(m_foot_final[0]);
-        residuals[1] = p_foot_end[1] - T(m_foot_final[1]);
-        residuals[2] = p_foot_end[2] - T(m_foot_final[2]);
+        residuals[0] = p_foot_end[0] - (T(m_foot_final[0]) - T(m_shoulder_final[0]));
+        residuals[1] = p_foot_end[1] - (T(m_foot_final[1]) - T(m_shoulder_final[1]));
+        residuals[2] = p_foot_end[2] - (T(m_foot_final[2]) - T(m_shoulder_final[2]));
 
         return true;
     }
 
 private:
+    bool m_mirror;
     Eigen::Vector3d m_foot_final;
+    Eigen::Vector3d m_shoulder_final;
 };
 
 

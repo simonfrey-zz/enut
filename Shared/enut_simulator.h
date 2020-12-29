@@ -23,6 +23,9 @@ public:
     enut::Angles get_angles( ) override;
     void set_angles( enut::Angles angles, double speed ) override;
 
+    void turn_off() override {}
+    void turn_on() override {}
+
 private:
     Plot3D_Interface::shared_t m_p3d;
 

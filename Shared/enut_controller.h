@@ -35,6 +35,7 @@ private:
     double m_body_yaw;
 
     std::map<int, Eigen::Vector3d> m_foot_pose;
+    std::map<int, Eigen::Vector3d> m_shoulder_pose;
     std::map<int, enut::Enut_Pate_model*> m_pates_models;
 
     IPM_PID * m_pid_roll;

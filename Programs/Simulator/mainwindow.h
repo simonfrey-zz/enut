@@ -7,6 +7,7 @@
 #include "ModulesChain/ModuleController.h"
 #include "IPM_SCPI/Remote/IPM_SCPI_Remote.h"
 #include <IPM_SCPI++/ipm_scpipp_server2.h>
+#include "IPM_Parameter/IPM_SectionedParmFile.h"
 
 namespace Ui {
 class MainWindow;
@@ -43,20 +44,27 @@ private slots:
 
     void on_dspGroundPitch_valueChanged(double arg1);
 
+    void on_dspBodyRoll_valueChanged(double arg1);
+
+    void on_dspBodyPitch_valueChanged(double arg1);
+
+    void on_dspBodyYaw_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
 
     Plot3D_Interface::shared_t m_p3d;
+    p3t::IPM_SectionedParmFile m_db;
 
     ipm::modules::controller * m_modules;
     Enut_Simulator * m_simul;
     Enut_Controller * m_cont;
 
-    IPM_TCPSocket * m_sock;
-    IPM_SCPI_Client * m_scpi;
+    std::vector<IPM_TCPSocket *> m_sock;
+    std::vector<IPM_SCPI_Client *> m_scpi;
     SCPIClassAdaptorCollection all_scpis;
 
-    void send_values();
+    void send_cmd( std::string cmd);
 };
 
 #endif // MAINWINDOW_H

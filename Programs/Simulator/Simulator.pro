@@ -47,7 +47,6 @@ DEPENDPATH += $$INCLUDEPATH
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    ../../Shared/enut.cpp \
     ../../external/IPM_Shared/external/p3t/IPM_SCPI/Remote/IPM_SCPI_Remote.cpp \
     ../../Shared/enut_simulator.cpp \
     ../../external/IPM_Shared/IPM_Calibration/ipm_ceres_geometry_fit.cpp \
@@ -60,7 +59,6 @@ SOURCES += \
 
 HEADERS += \
         mainwindow.h \
-    ../../Shared/enut.h \
     ../../external/IPM_Shared/external/p3t/IPM_SCPI/Remote/IPM_SCPI_Remote.h \
     ../../Shared/enut_simulator.h \
     ../../Shared/enut_models.h \

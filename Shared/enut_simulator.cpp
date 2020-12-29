@@ -146,7 +146,7 @@ void Enut_Simulator::loop(){
             if( pitch[1] > 0 )
                 m_imu_pitch = -m_imu_pitch;
 
-            PT_INFO( "roll " << m_imu_roll << ", pitch " << m_imu_pitch );
+            //PT_INFO( "roll " << m_imu_roll << ", pitch " << m_imu_pitch );
 
         }
         p3t::sleep(dt);

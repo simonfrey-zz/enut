@@ -143,10 +143,15 @@ void Enut_Controller::loop()
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
                 // put foot points
-                m_foot_pose[FL] = {0.02,0.03,0};
+                m_foot_pose[FL] = {-0.02,0.03,0};
                 m_foot_pose[FR] = {0.02,0.03,0};
+                m_foot_pose[HL] = {-0.02,0,0};
                 m_foot_pose[HR] = {0.02,0,0};
-                m_foot_pose[HL] = {0.02,0,0};
+
+                m_foot_pose[FL] += body.shoulders[FL].tr;
+                m_foot_pose[FR] += body.shoulders[FR].tr;
+                m_foot_pose[HR] += body.shoulders[HR].tr;
+                m_foot_pose[HL] += body.shoulders[HL].tr;
 
 
                 m_foot_pose[FL][2] -= m_height - pid_roll + pid_pitch;
@@ -154,11 +159,18 @@ void Enut_Controller::loop()
                 m_foot_pose[HR][2] -= m_height + pid_roll - pid_pitch;
                 m_foot_pose[HL][2] -= m_height - pid_roll - pid_pitch;
 
+                // shoulders
+                Eigen::AngleAxisd aa_body_yaw( m_body_yaw, Eigen::Vector3d(0,0,1) );
+                m_shoulder_pose[FL] = aa_body_yaw._transformVector(body.shoulders[FL].tr);
+                m_shoulder_pose[FR] = aa_body_yaw._transformVector(body.shoulders[FR].tr);
+                m_shoulder_pose[HL] = aa_body_yaw._transformVector(body.shoulders[HL].tr);
+                m_shoulder_pose[HR] = aa_body_yaw._transformVector(body.shoulders[HR].tr);
 
-                m_pates_models[FL]->set_foot_final( m_foot_pose[FL] );
-                m_pates_models[FR]->set_foot_final( m_foot_pose[FR] );
-                m_pates_models[HL]->set_foot_final( m_foot_pose[HL] );
-                m_pates_models[HR]->set_foot_final( m_foot_pose[HR] );
+
+                m_pates_models[FL]->set_foot_final( m_foot_pose[FL], m_shoulder_pose[FL] );
+                m_pates_models[FR]->set_foot_final( m_foot_pose[FR], m_shoulder_pose[FR] );
+                m_pates_models[HL]->set_foot_final( m_foot_pose[HL], m_shoulder_pose[HL] );
+                m_pates_models[HR]->set_foot_final( m_foot_pose[HR], m_shoulder_pose[HR] );
 
                 ceres::Solve(options, &problem, &summary);
 
@@ -203,10 +215,10 @@ void Enut_Controller::init_ceres()
 
     reset_ceres_angles();
 
-    m_pates_models[FL] = new enut::Enut_Pate_model( m_foot_pose[FL] );
-    m_pates_models[FR] = new enut::Enut_Pate_model( m_foot_pose[FR] );
-    m_pates_models[HL] = new enut::Enut_Pate_model( m_foot_pose[HL] );
-    m_pates_models[HR] = new enut::Enut_Pate_model( m_foot_pose[HR] );
+    m_pates_models[FL] = new enut::Enut_Pate_model( true,  m_foot_pose[FL], body.shoulders[FL].tr );
+    m_pates_models[FR] = new enut::Enut_Pate_model( false, m_foot_pose[FR], body.shoulders[FR].tr );
+    m_pates_models[HL] = new enut::Enut_Pate_model( true,  m_foot_pose[HL], body.shoulders[HL].tr );
+    m_pates_models[HR] = new enut::Enut_Pate_model( false, m_foot_pose[HR], body.shoulders[HR].tr );
 
     problem.AddResidualBlock( new ceres::AutoDiffCostFunction<enut::Enut_Pate_model, 3, 1, 1, 1>(
                                   m_pates_models[FL] ),
