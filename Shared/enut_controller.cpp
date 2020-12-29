@@ -9,6 +9,7 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
     m_angles( angles ),
     problem( problem_options )
 {
+
     body.shoulders[HL].tr = {-LEGS_SPAN_X*0.5,-LEGS_SPAN_Y,0.};
     body.shoulders[HR].tr = { LEGS_SPAN_X*0.5,-LEGS_SPAN_Y,0.};
     body.shoulders[FL].tr = {-LEGS_SPAN_X*0.5, LEGS_SPAN_Y,0.};
@@ -21,11 +22,11 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
     m_attitude = enut::relax;
 
-    m_height = 0.12;
-
     m_body_roll = 0;
     m_body_pitch = 0;
     m_body_yaw = 0;
+
+    m_height = 0.12;
 
     init_ceres();
 
@@ -143,28 +144,22 @@ void Enut_Controller::loop()
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
                 // put foot points
-                m_foot_pose[FL] = {-0.02,0.03,0};
-                m_foot_pose[FR] = {0.02,0.03,0};
-                m_foot_pose[HL] = {-0.02,0,0};
-                m_foot_pose[HR] = {0.02,0,0};
+                m_foot_pose[FL] = Eigen::Vector3d(-0.02,0.03,0) + body.shoulders[FL].tr;
+                m_foot_pose[FR] = Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
+                m_foot_pose[HL] = Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
+                m_foot_pose[HR] = Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
 
-                m_foot_pose[FL] += body.shoulders[FL].tr;
-                m_foot_pose[FR] += body.shoulders[FR].tr;
-                m_foot_pose[HR] += body.shoulders[HR].tr;
-                m_foot_pose[HL] += body.shoulders[HL].tr;
-
-
-                m_foot_pose[FL][2] -= m_height - pid_roll + pid_pitch;
-                m_foot_pose[FR][2] -= m_height + pid_roll + pid_pitch;
-                m_foot_pose[HR][2] -= m_height + pid_roll - pid_pitch;
-                m_foot_pose[HL][2] -= m_height - pid_roll - pid_pitch;
+                m_foot_pose[FL][2] +=  pid_roll - pid_pitch;
+                m_foot_pose[FR][2] += -pid_roll - pid_pitch;
+                m_foot_pose[HR][2] += -pid_roll + pid_pitch;
+                m_foot_pose[HL][2] +=  pid_roll + pid_pitch;
 
                 // shoulders
                 Eigen::AngleAxisd aa_body_yaw( m_body_yaw, Eigen::Vector3d(0,0,1) );
-                m_shoulder_pose[FL] = aa_body_yaw._transformVector(body.shoulders[FL].tr);
-                m_shoulder_pose[FR] = aa_body_yaw._transformVector(body.shoulders[FR].tr);
-                m_shoulder_pose[HL] = aa_body_yaw._transformVector(body.shoulders[HL].tr);
-                m_shoulder_pose[HR] = aa_body_yaw._transformVector(body.shoulders[HR].tr);
+                m_shoulder_pose[FL] = aa_body_yaw._transformVector(body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height));
+                m_shoulder_pose[FR] = aa_body_yaw._transformVector(body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height));
+                m_shoulder_pose[HL] = aa_body_yaw._transformVector(body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height));
+                m_shoulder_pose[HR] = aa_body_yaw._transformVector(body.shoulders[HR].tr + Eigen::Vector3d(0,0,m_height));
 
 
                 m_pates_models[FL]->set_foot_final( m_foot_pose[FL], m_shoulder_pose[FL] );

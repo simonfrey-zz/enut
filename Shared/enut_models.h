@@ -131,8 +131,10 @@ public:
     }
 
     void set_foot_final( Eigen::Vector3d f, Eigen::Vector3d s ){
-        if( f[2] > -0.06 )
-            f[2] = -0.06;
+        // limit foot height
+        if( (f[2] - s[2]) > -ENUT_MIN_HEIGHT ) f[2] = s[2] - ENUT_MIN_HEIGHT;
+        if( (f[2] - s[2]) < -ENUT_MAX_HEIGHT ) f[2] = s[2] - ENUT_MAX_HEIGHT;
+
         m_foot_final = f;
         m_shoulder_final = s;
     }
