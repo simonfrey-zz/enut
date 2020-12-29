@@ -11,6 +11,10 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
+    m_sock_local(nullptr),
+    m_scpi_local(nullptr),
+    m_sock_remote(nullptr),
+    m_scpi_remote(nullptr),
     all_scpis("SCPI_COLLECTION")
 {
 
@@ -49,21 +53,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->dspHeight->setValue( m_cont->get_height().second * 1000 );
 
-    m_sock.push_back( new IPM_TCPSocket( "127.0.0.1", 50010, 3 ) );
-    m_scpi.push_back( new IPM_SCPI_Client( *m_sock[0] ) );
+    m_sock_local = new IPM_TCPSocket( "127.0.0.1", 50010, 3 );
+    m_scpi_local = new IPM_SCPI_Client( *m_sock_local );
 
-    /*
-    m_sock.push_back( new IPM_TCPSocket( "192.168.0.110", 50010, 3 ) );
-    m_scpi.push_back( new IPM_SCPI_Client( *m_sock[1] ) );
-    */
 }
 
 MainWindow::~MainWindow()
 {
     delete m_modules;
-    for( auto &s : m_scpi )
+    std::vector<IPM_TCPSocket *> sock = {m_sock_local, m_sock_remote};
+    std::vector<IPM_SCPI_Client *> scpi = {m_scpi_local, m_scpi_remote};
+    for( auto &s : scpi )
         delete s;
-    for( auto &s : m_sock )
+    for( auto &s : sock )
         delete s;
     delete ui;
 }
@@ -108,22 +110,35 @@ void MainWindow::on_dspHeight_valueChanged(double arg1)
 void MainWindow::on_dspGroundRoll_valueChanged(double )
 {
     m_simul->set_ground_angles( ui->dspGroundRoll->value() * M_PI/180.,
-                                ui->dspGroundPitch->value() * M_PI/180.);
+                                ui->dspGroundPitch->value() * M_PI/180.,
+                                ui->dspGroundYaw->value() * M_PI/180.);
 }
 
 void MainWindow::on_dspGroundPitch_valueChanged(double )
 {
     m_simul->set_ground_angles( ui->dspGroundRoll->value() * M_PI/180.,
-                                ui->dspGroundPitch->value() * M_PI/180.);
+                                ui->dspGroundPitch->value() * M_PI/180.,
+                                ui->dspGroundYaw->value() * M_PI/180.);
 }
+
+void MainWindow::on_dspGroundYaw_valueChanged(double)
+{
+    m_simul->set_ground_angles( ui->dspGroundRoll->value() * M_PI/180.,
+                                ui->dspGroundPitch->value() * M_PI/180.,
+                                ui->dspGroundYaw->value() * M_PI/180.);
+}
+
 
 void MainWindow::send_cmd(std::string cmd)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     PT_INFO("send " << cmd);
-    for(unsigned i = 0; i < m_sock.size(); i++ ){
-        if( m_sock[i] && m_sock[i]->get_state() != 0 ){
+    std::vector<IPM_TCPSocket *> sock = {m_sock_local, m_sock_remote};
+    std::vector<IPM_SCPI_Client *> scpi = {m_scpi_local, m_scpi_remote};
+    for(unsigned i = 0; i < sock.size(); i++ ){
+        if( sock[i] && sock[i]->get_state() != 0 ){
             int err(0);
-            std::string ret = m_scpi[i]->command( cmd, &err );
+            std::string ret = scpi[i]->command( cmd, &err );
             if( err ){
                 PT_SEVERE( ret );
             }
@@ -150,4 +165,23 @@ void MainWindow::on_dspBodyYaw_valueChanged(double)
     send_cmd( "CTRL:RPY " + p3t::to_string(ui->dspBodyRoll->value()*M_PI/180.) + " "
                + p3t::to_string(ui->dspBodyPitch->value()*M_PI/180.) + " "
                + p3t::to_string(ui->dspBodyYaw->value()*M_PI/180.) );
+}
+
+void MainWindow::on_cbConnect_clicked()
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    if( ui->cbConnect->isChecked() ){
+        if( m_sock_remote == nullptr ){
+            m_sock_remote = new IPM_TCPSocket( "192.168.0.110", 50010, 3 );
+            m_scpi_remote = new IPM_SCPI_Client( *m_sock_remote );
+        }
+    }
+    else {
+        if( m_sock_remote != nullptr ){
+            delete m_scpi_remote;
+            delete m_sock_remote;
+            m_sock_remote = nullptr;
+            m_scpi_remote = nullptr;
+        }
+    }
 }

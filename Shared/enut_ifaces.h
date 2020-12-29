@@ -10,6 +10,7 @@ public:
     struct imu_data{
         double roll;
         double pitch;
+        double yaw;
     };
     virtual imu_data get_imu() = 0;
 };

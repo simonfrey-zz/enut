@@ -12,7 +12,7 @@ class Enut_Simulator : public ipm::modules::module, public enut::imu_iface, publ
 public:
     Enut_Simulator( Plot3D_Interface::shared_t p3d );
 
-    void set_ground_angles( double roll, double pitch );
+    void set_ground_angles(double roll, double pitch , double yaw);
 
     void dbg_set_angles( double s_fl, double s_fr, double s_hl, double s_hr,
                      double l_fl, double l_fr, double l_hl, double l_hr,
@@ -38,12 +38,14 @@ private:
 
     double m_ground_pitch;
     double m_ground_roll;
+    double m_ground_yaw;
 
     enut::Angles m_soll_angles;
     enut::Angles m_ist_angles;
 
     double m_imu_roll;
     double m_imu_pitch;
+    double m_imu_yaw;
 
     std::mutex m_mutex;
 

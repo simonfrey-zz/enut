@@ -290,6 +290,44 @@
            <double>0.000000000000000</double>
           </property>
          </widget>
+         <widget class="QCheckBox" name="cbConnect">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>370</y>
+            <width>92</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>connect</string>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="dspGroundYaw">
+          <property name="geometry">
+           <rect>
+            <x>170</x>
+            <y>80</y>
+            <width>161</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="prefix">
+           <string>gnd yaw </string>
+          </property>
+          <property name="suffix">
+           <string/>
+          </property>
+          <property name="minimum">
+           <double>-60.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>60.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.000000000000000</double>
+          </property>
+         </widget>
         </widget>
         <widget class="QWidget" name="tab_2">
          <attribute name="title">

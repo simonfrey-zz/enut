@@ -19,9 +19,11 @@ Enut_Simulator::Enut_Simulator(Plot3D_Interface::shared_t p3d) :
 
     m_ground_roll = 0;
     m_ground_pitch = 0;
+    m_ground_yaw = 0;
 
     m_imu_roll = 0;
     m_imu_pitch = 0;
+    m_imu_yaw = 0;
 
     m_speed = 1;
 
@@ -29,10 +31,11 @@ Enut_Simulator::Enut_Simulator(Plot3D_Interface::shared_t p3d) :
     start_helper_thread( &Enut_Simulator::loop, this );
 }
 
-void Enut_Simulator::set_ground_angles(double roll, double pitch)
+void Enut_Simulator::set_ground_angles(double roll, double pitch, double yaw)
 {
     m_ground_roll = roll;
     m_ground_pitch = pitch;
+    m_ground_yaw = yaw;
 }
 
 void Enut_Simulator::dbg_set_angles(double s_fl, double s_fr, double s_hl, double s_hr, double l_fl, double l_fr, double l_hl, double l_hr, double f_fl, double f_fr, double f_hl, double f_hr, double head)
@@ -50,6 +53,7 @@ enut::imu_iface::imu_data Enut_Simulator::get_imu()
     enut::imu_iface::imu_data ret;
     ret.roll = m_imu_roll;
     ret.pitch = m_imu_pitch;
+    ret.yaw = m_imu_yaw;
     return ret;
 }
 
@@ -114,15 +118,16 @@ void Enut_Simulator::loop(){
 
             Eigen::AngleAxisd aa_g_r( m_ground_roll, Eigen::Vector3d(0,1,0) );
             Eigen::AngleAxisd aa_g_p( m_ground_pitch, Eigen::Vector3d(1,0,0) );
+            Eigen::AngleAxisd aa_g_y( m_ground_yaw, Eigen::Vector3d(0,0,1) );
             for( auto &p : gp ){
-                p = aa_g_p._transformVector( aa_g_r._transformVector(p) );
+                p = aa_g_y._transformVector( aa_g_p._transformVector( aa_g_r._transformVector(p) ));
             }
 
             IPM_CeresPlaneFit fit_gnd(false);
             fit_gnd.add_points( gp );
             fit_gnd.solve( true);
 
-            body.q = fit_gnd.get_rotation() * fit_body.get_rotation().inverse();
+            body.q = aa_g_y * fit_gnd.get_rotation() * fit_body.get_rotation().inverse();
 
             // translate body on plane
             Eigen::Vector3d p_offset(0,0,0);
@@ -132,6 +137,7 @@ void Enut_Simulator::loop(){
             body.tr = p_offset * -0.25;
 
             // imu
+            // roll
             Eigen::Vector3d roll = body.q._transformVector(Eigen::Vector3d(0,0,1));
             roll[1] = 0;
             roll.normalize();
@@ -139,6 +145,7 @@ void Enut_Simulator::loop(){
             if( roll[0] > 0 )
                 m_imu_roll = -m_imu_roll;
 
+            // pitch
             Eigen::Vector3d pitch = body.q._transformVector(Eigen::Vector3d(0,0,1));
             pitch[0] = 0;
             pitch.normalize();
@@ -146,7 +153,15 @@ void Enut_Simulator::loop(){
             if( pitch[1] > 0 )
                 m_imu_pitch = -m_imu_pitch;
 
-            //PT_INFO( "roll " << m_imu_roll << ", pitch " << m_imu_pitch );
+            Eigen::Vector3d yaw = body.q._transformVector(Eigen::Vector3d(1,0,0));
+            yaw[2] = 0;
+            yaw.normalize();
+            m_imu_yaw = std::acos(yaw.dot( Eigen::Vector3d(1,0,0) )) * 180.0 / M_PI;
+            if( yaw[1] > 0 )
+                m_imu_yaw = -m_imu_yaw;
+
+
+            PT_INFO( "roll " << m_imu_roll << ", pitch " << m_imu_pitch << ", yaw " << m_imu_yaw );
 
         }
         p3t::sleep(dt);
@@ -176,8 +191,9 @@ void Enut_Simulator::draw()
 
             Eigen::AngleAxisd aa_g_r( m_ground_roll, Eigen::Vector3d(0,1,0) );
             Eigen::AngleAxisd aa_g_p( m_ground_pitch, Eigen::Vector3d(1,0,0) );
+            Eigen::AngleAxisd aa_g_y( m_ground_yaw, Eigen::Vector3d(0,0,1) );
             for( auto &p : gp ){
-                p = aa_g_p._transformVector( aa_g_r._transformVector(p) ) + draw_offset;
+                p = aa_g_y._transformVector( aa_g_p._transformVector( aa_g_r._transformVector(p) )) + draw_offset;
             }
             m_p3d->addRect2(gp,PLOT3D_DARK_GRAY,0.5,"ground");
 

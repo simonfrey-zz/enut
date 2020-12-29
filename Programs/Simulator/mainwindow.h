@@ -8,6 +8,7 @@
 #include "IPM_SCPI/Remote/IPM_SCPI_Remote.h"
 #include <IPM_SCPI++/ipm_scpipp_server2.h>
 #include "IPM_Parameter/IPM_SectionedParmFile.h"
+#include <mutex>
 
 namespace Ui {
 class MainWindow;
@@ -50,6 +51,10 @@ private slots:
 
     void on_dspBodyYaw_valueChanged(double arg1);
 
+    void on_cbConnect_clicked();
+
+    void on_dspGroundYaw_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
 
@@ -60,11 +65,16 @@ private:
     Enut_Simulator * m_simul;
     Enut_Controller * m_cont;
 
-    std::vector<IPM_TCPSocket *> m_sock;
-    std::vector<IPM_SCPI_Client *> m_scpi;
+    IPM_TCPSocket * m_sock_local;
+    IPM_SCPI_Client * m_scpi_local;
+
+    IPM_TCPSocket * m_sock_remote;
+    IPM_SCPI_Client * m_scpi_remote;
+
     SCPIClassAdaptorCollection all_scpis;
 
     void send_cmd( std::string cmd);
+    std::mutex m_mutex;
 };
 
 #endif // MAINWINDOW_H
