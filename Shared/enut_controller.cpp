@@ -1,5 +1,6 @@
 #include "enut_controller.h"
 #include "Shared/enut_models.h"
+#include "Shared/enut_gait.h"
 
 Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_iface * imu, enut::angles_iface * angles) :
     ipm::modules::module("control"),
@@ -95,6 +96,8 @@ void Enut_Controller::loop()
         {
             std::unique_lock<std::mutex> lock(m_mutex);
 
+            auto imu = m_imu->get_imu();
+
             if( prev_attitude != m_attitude ){
 
                 PT_INFO("switch to state " << enut::Attitude_to_string(m_attitude) );
@@ -114,8 +117,6 @@ void Enut_Controller::loop()
                 speed = 1;
             if( speed < 0.2 )
                 speed = 0.2;
-
-            auto imu = m_imu->get_imu();
 
             if( std::abs(imu.pitch) > 60 || std::abs(imu.roll) > 60 ){
                 m_attitude = enut::relax;
@@ -139,8 +140,6 @@ void Enut_Controller::loop()
             }
             else if( m_attitude == enut::standing ){
 
-                auto imu = m_imu->get_imu();
-
                 const double pid_roll = m_pid_roll->control( sin(m_body_roll)*LEGS_SPAN_X*0.5,
                                                              sin(imu.roll*M_PI/180.0)*LEGS_SPAN_X*0.5 );
 
@@ -163,7 +162,8 @@ void Enut_Controller::loop()
 
                 // shoulders
                 const double pid_yaw = m_pid_yaw->control( 0, imu.yaw );
-                Eigen::AngleAxisd aa_body_yaw( m_body_yaw + pid_yaw*M_PI/180., Eigen::Vector3d(0,0,1) );
+                Eigen::AngleAxisd aa_body_yaw( m_body_yaw - imu.yaw*M_PI/180., Eigen::Vector3d(0,0,1) );
+
                 m_shoulder_pose[FL] = aa_body_yaw._transformVector(body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height));
                 m_shoulder_pose[FR] = aa_body_yaw._transformVector(body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height));
                 m_shoulder_pose[HL] = aa_body_yaw._transformVector(body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height));
@@ -185,6 +185,47 @@ void Enut_Controller::loop()
                 if( speed < 1 ){
                     speed += 0.005;
                 }
+            }
+
+            else if( m_attitude == enut::walking ){
+
+                Enut_Gait gait;
+                static double gait_step = 0;
+                gait_step += 0.01;
+
+                body.head.angle = (90-imu.pitch)*M_PI/180.0;
+
+
+                // put foot points
+                m_foot_pose[FL] = gait.get(gait_step+0.25, 0.05, 0.01) + Eigen::Vector3d(-0.02,0.03,0) + body.shoulders[FL].tr;
+                m_foot_pose[FR] = gait.get(gait_step+0.75, 0.05, 0.01) + Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
+                m_foot_pose[HL] = gait.get(gait_step+0.50, 0.05, 0.01) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
+                m_foot_pose[HR] = gait.get(gait_step, 0.05, 0.01) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
+
+
+                // shoulders
+                m_shoulder_pose[FL] = body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height);
+                m_shoulder_pose[FR] = body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height);
+                m_shoulder_pose[HL] = body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height);
+                m_shoulder_pose[HR] = body.shoulders[HR].tr + Eigen::Vector3d(0,0,m_height);
+
+
+                m_pates_models[FL]->set_foot_final( m_foot_pose[FL], m_shoulder_pose[FL] );
+                m_pates_models[FR]->set_foot_final( m_foot_pose[FR], m_shoulder_pose[FR] );
+                m_pates_models[HL]->set_foot_final( m_foot_pose[HL], m_shoulder_pose[HL] );
+                m_pates_models[HR]->set_foot_final( m_foot_pose[HR], m_shoulder_pose[HR] );
+
+                ceres::Solve(options, &problem, &summary);
+
+                m_angles->set_angles( {shoulder_angles[FL], shoulder_angles[FR],shoulder_angles[HL],shoulder_angles[HR],
+                                       leg_angles[FL], leg_angles[FR],leg_angles[HL],leg_angles[HR],
+                                       foot_angles[FL], foot_angles[FR],foot_angles[HL],foot_angles[HR],
+                                       body.head.angle}, speed );
+
+                if( speed < 1 ){
+                    speed += 0.005;
+                }
+
             }
 
         }

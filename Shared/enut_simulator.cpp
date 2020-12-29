@@ -1,5 +1,8 @@
 #include "enut_simulator.h"
 #include "IPM_Calibration/ipm_ceres_geometry_fit.h"
+#include "Shared/lowpassfilter.h"
+#include "Shared/enut_gait.h"
+
 Enut_Simulator::Enut_Simulator(Plot3D_Interface::shared_t p3d) :
     ipm::modules::module("simulator"),
     m_p3d( p3d )
@@ -73,6 +76,9 @@ void Enut_Simulator::set_angles(enut::Angles angles, double speed)
 void Enut_Simulator::loop(){
 
     const double dt = 1.0/20.0;
+    bool lpf_init = false;
+    LowPassFilter lpf(0.2, 1.0/20.);
+
     while (helper_in_normal_operation()) {
         {
             std::unique_lock<std::mutex> lock(m_mutex);
@@ -153,12 +159,19 @@ void Enut_Simulator::loop(){
             if( pitch[1] > 0 )
                 m_imu_pitch = -m_imu_pitch;
 
+            // yaw
             Eigen::Vector3d yaw = body.q._transformVector(Eigen::Vector3d(1,0,0));
             yaw[2] = 0;
             yaw.normalize();
             m_imu_yaw = std::acos(yaw.dot( Eigen::Vector3d(1,0,0) )) * 180.0 / M_PI;
-            if( yaw[1] > 0 )
+            if( yaw[1] < 0 )
                 m_imu_yaw = -m_imu_yaw;
+
+            if( lpf_init == false ){
+                lpf.set_output( m_imu_yaw );
+                lpf_init = true;
+            }
+            m_imu_yaw = m_imu_yaw - lpf.update( m_imu_yaw );
 
 
             PT_INFO( "roll " << m_imu_roll << ", pitch " << m_imu_pitch << ", yaw " << m_imu_yaw );
@@ -178,6 +191,11 @@ void Enut_Simulator::draw()
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_p3d->clearAll();
+
+            Enut_Gait gait;
+            for( double i = 0; i <= 2.0; i += 0.01 ){
+                m_p3d->add3DPoint( gait.get(i, 0.1, 0.01), PLOT3D_BLUE_LIGHT, "gait" );
+            }
 
             const Eigen::Vector3d draw_offset(0.5,0.5,0);
             //const Eigen::Vector3d draw_offset(0,0,0);
