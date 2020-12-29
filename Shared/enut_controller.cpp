@@ -38,6 +38,13 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
     m_pid_pitch = new IPM_PID( kp, ki, kd );
     m_db.unlock();
 
+    m_db.lock();
+    m_pid_yaw = new IPM_PID( m_db.getd(".YAW_PID.KP", 0.0 ),
+                             m_db.getd(".YAW_PID.KI", 0.3 ),
+                             m_db.getd(".YAW_PID.KD", 0.0 )
+                             );
+    m_db.unlock();
+
     addCommand( {"CTRL","HEIGHT"}, &Enut_Controller::set_height, &Enut_Controller::get_height);
     addCommand( {"CTRL","ATTITUDE"}, &Enut_Controller::set_attitude, &Enut_Controller::get_attitude);
     addCommandWriteOnly( {"CTRL", "RPY"}, &Enut_Controller::set_body_rpy );
@@ -155,7 +162,8 @@ void Enut_Controller::loop()
                 m_foot_pose[HL][2] +=  pid_roll + pid_pitch;
 
                 // shoulders
-                Eigen::AngleAxisd aa_body_yaw( m_body_yaw, Eigen::Vector3d(0,0,1) );
+                const double pid_yaw = m_pid_yaw->control( 0, imu.yaw );
+                Eigen::AngleAxisd aa_body_yaw( m_body_yaw + pid_yaw*M_PI/180., Eigen::Vector3d(0,0,1) );
                 m_shoulder_pose[FL] = aa_body_yaw._transformVector(body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height));
                 m_shoulder_pose[FR] = aa_body_yaw._transformVector(body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height));
                 m_shoulder_pose[HL] = aa_body_yaw._transformVector(body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height));

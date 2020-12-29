@@ -1,4 +1,8 @@
 .PID.KP = 0.0
-.PID.KI = 0.13
-.PID.KD = 0.01
+.PID.KI = 0.22
+.PID.KD = 0.015
+
+.YAW_PID.KP = 0.55
+.YAW_PID.KI = 0.0
+.YAW_PID.KD = 0.01
 

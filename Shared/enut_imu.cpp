@@ -96,7 +96,7 @@ void Enut_imu::loop(){
 
     float dt(9);
     bool lpf_init = false;
-    LowPassFilter lpf(0.2, 1.0/250.);
+    LowPassFilter lpf_yaw(0.2, 1.0/250.);
 
     while( helper_in_normal_operation() ){
 
@@ -108,14 +108,16 @@ void Enut_imu::loop(){
         m_imu_data.pitch = mpuXX50->attitude.pitch;
 
         if( lpf_init == false ){
-            lpf.set_output( mpuXX50->attitude.yaw );
+            lpf_yaw.set_output( mpuXX50->attitude.yaw );
             lpf_init = true;
         }
-        m_imu_data.yaw = mpuXX50->attitude.yaw - lpf.update( mpuXX50->attitude.yaw );
+        m_imu_data.yaw = mpuXX50->attitude.yaw - lpf_yaw.update( mpuXX50->attitude.yaw );
 
-        std::cout << std::setprecision(3) << m_imu_data.roll << ", ";
-        std::cout << std::setprecision(3) << m_imu_data.pitch << ", ";
-        std::cout << std::setprecision(3) << m_imu_data.yaw << std::endl;
+        if( 0 ){
+            std::cout << std::setprecision(3) << m_imu_data.roll << ", ";
+            std::cout << std::setprecision(3) << m_imu_data.pitch << ", ";
+            std::cout << std::setprecision(3) << m_imu_data.yaw << std::endl;
+        }
 
         // Stabilize the data rate
 

@@ -40,6 +40,7 @@ private:
 
     IPM_PID * m_pid_roll;
     IPM_PID * m_pid_pitch;
+    IPM_PID * m_pid_yaw;
 
     void loop();
 
