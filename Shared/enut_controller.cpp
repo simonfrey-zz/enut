@@ -2,6 +2,8 @@
 #include "Shared/enut_models.h"
 #include "Shared/enut_gait.h"
 
+#define IMU_ROLL_OFFSET (2.5*M_PI/180.0)
+
 Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_iface * imu, enut::angles_iface * angles) :
     ipm::modules::module("control"),
     SCPIClassAdaptor<Enut_Controller>(this,"controller"),
@@ -138,22 +140,49 @@ void Enut_Controller::loop()
 
                 continue;
             }
-            else if( m_attitude == enut::standing ){
+            else if( m_attitude == enut::standing || m_attitude == enut::walking ){
 
-                const double pid_roll = m_pid_roll->control( sin(m_body_roll)*LEGS_SPAN_X*0.5,
+                double pid_roll = m_pid_roll->control( sin(m_body_roll + IMU_ROLL_OFFSET)*LEGS_SPAN_X*0.5,
                                                              sin(imu.roll*M_PI/180.0)*LEGS_SPAN_X*0.5 );
 
-                const double pid_pitch = m_pid_pitch->control( sin(m_body_pitch)*LEGS_SPAN_Y*0.5,
+                double pid_pitch = m_pid_pitch->control( sin(m_body_pitch)*LEGS_SPAN_Y*0.5,
                                                                sin(imu.pitch*M_PI/180.0)*LEGS_SPAN_Y*0.5 );
 
+                double pid_yaw = m_pid_yaw->control( 0, imu.yaw );
+
+                // limit pid when walking
+                if( m_attitude == enut::walking ){
+                    pid_roll *= 0.05;
+                    pid_pitch *= 0.05;
+                    pid_yaw *= 0.05;
+                }
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
+                Enut_Gait gait;
+                static double gait_step = 0;
+                gait_step += 0.04;
+
+                body.head.angle = (90-imu.pitch)*M_PI/180.0;
+
+                const double step_height = (m_attitude == enut::walking) ? 0.02 : 0;
+                const double step_width = (m_attitude == enut::walking) ? 0.06 : 0;
+
+                const double font_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.03;
+
+                // put foot points
+                m_foot_pose[FL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,font_feets_y,0) + body.shoulders[FL].tr;
+                m_foot_pose[FR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d( 0.02,font_feets_y,0) + body.shoulders[FR].tr;
+                m_foot_pose[HL] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
+                m_foot_pose[HR] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
+
+                /*
                 // put foot points
                 m_foot_pose[FL] = Eigen::Vector3d(-0.02,0.03,0) + body.shoulders[FL].tr;
                 m_foot_pose[FR] = Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
                 m_foot_pose[HL] = Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
                 m_foot_pose[HR] = Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
+                */
 
                 m_foot_pose[FL][2] +=  pid_roll - pid_pitch;
                 m_foot_pose[FR][2] += -pid_roll - pid_pitch;
@@ -161,8 +190,7 @@ void Enut_Controller::loop()
                 m_foot_pose[HL][2] +=  pid_roll + pid_pitch;
 
                 // shoulders
-                const double pid_yaw = m_pid_yaw->control( 0, imu.yaw );
-                Eigen::AngleAxisd aa_body_yaw( m_body_yaw - imu.yaw*M_PI/180., Eigen::Vector3d(0,0,1) );
+                Eigen::AngleAxisd aa_body_yaw( m_body_yaw + pid_yaw*M_PI/180.0 , Eigen::Vector3d(0,0,1) );
 
                 m_shoulder_pose[FL] = aa_body_yaw._transformVector(body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height));
                 m_shoulder_pose[FR] = aa_body_yaw._transformVector(body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height));
@@ -187,20 +215,22 @@ void Enut_Controller::loop()
                 }
             }
 
-            else if( m_attitude == enut::walking ){
+            else if( m_attitude == enut::walking && false ){
 
                 Enut_Gait gait;
                 static double gait_step = 0;
-                gait_step += 0.01;
+                gait_step += 0.04;
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
+                const double step_height = 0.02;
+                const double step_width = 0.06;
 
                 // put foot points
-                m_foot_pose[FL] = gait.get(gait_step+0.25, 0.05, 0.01) + Eigen::Vector3d(-0.02,0.03,0) + body.shoulders[FL].tr;
-                m_foot_pose[FR] = gait.get(gait_step+0.75, 0.05, 0.01) + Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
-                m_foot_pose[HL] = gait.get(gait_step+0.50, 0.05, 0.01) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
-                m_foot_pose[HR] = gait.get(gait_step, 0.05, 0.01) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
+                m_foot_pose[FL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,0.03,0) + body.shoulders[FL].tr;
+                m_foot_pose[FR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
+                m_foot_pose[HL] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
+                m_foot_pose[HR] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
 
 
                 // shoulders
@@ -258,6 +288,8 @@ void Enut_Controller::init_ceres()
 {
 
     reset_ceres_angles();
+
+    loss_size = 0.001;
 
     m_pates_models[FL] = new enut::Enut_Pate_model( true,  m_foot_pose[FL], body.shoulders[FL].tr );
     m_pates_models[FR] = new enut::Enut_Pate_model( false, m_foot_pose[FR], body.shoulders[FR].tr );
@@ -338,7 +370,7 @@ void Enut_Controller::init_ceres()
     ceres::Solver::Options options;
     options.num_threads = std::thread::hardware_concurrency();
     options.linear_solver_type = ceres::DENSE_SCHUR;
-    options.max_num_iterations = 20;
+    options.max_num_iterations = 40;
     options.max_solver_time_in_seconds=0.1;
     options.minimizer_progress_to_stdout = true;
 

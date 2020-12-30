@@ -48,6 +48,7 @@ private:
     double m_imu_yaw;
 
     std::mutex m_mutex;
+    std::vector<Eigen::Vector3d> lowest_points;
 
 };
 

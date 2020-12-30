@@ -86,7 +86,7 @@ void Enut_Simulator::loop(){
             move_angles( dt );
 
             // find for each legs the lowest joint
-            std::vector<Eigen::Vector3d> lowest_points = {{0,0,110}, {0,0,110}, {0,0,110}, {0,0,110}};
+            std::vector<Eigen::Vector3d> lowest_4_points = {{0,0,110}, {0,0,110}, {0,0,110}, {0,0,110}};
             double min_z = 1000;
             auto update_lowest = []( Eigen::Vector3d &l, Eigen::Vector3d &p, double &min_z ) -> void {
                 if( p[2] < l[2] ){
@@ -95,21 +95,39 @@ void Enut_Simulator::loop(){
                 if( l[2] < min_z )
                     min_z = l[2];
             };
-            update_lowest(lowest_points[0], body.shoulders[FR].p, min_z);
-            update_lowest(lowest_points[0], body.shoulders[FR].leg.p, min_z);
-            update_lowest(lowest_points[0], body.shoulders[FR].leg.foot.p, min_z);
+            update_lowest(lowest_4_points[0], body.shoulders[FR].p, min_z);
+            update_lowest(lowest_4_points[0], body.shoulders[FR].leg.p, min_z);
+            update_lowest(lowest_4_points[0], body.shoulders[FR].leg.foot.p, min_z);
 
-            update_lowest(lowest_points[1], body.shoulders[FL].p, min_z);
-            update_lowest(lowest_points[1], body.shoulders[FL].leg.p, min_z);
-            update_lowest(lowest_points[1], body.shoulders[FL].leg.foot.p, min_z);
+            update_lowest(lowest_4_points[1], body.shoulders[FL].p, min_z);
+            update_lowest(lowest_4_points[1], body.shoulders[FL].leg.p, min_z);
+            update_lowest(lowest_4_points[1], body.shoulders[FL].leg.foot.p, min_z);
 
-            update_lowest(lowest_points[2], body.shoulders[HR].p, min_z);
-            update_lowest(lowest_points[2], body.shoulders[HR].leg.p, min_z);
-            update_lowest(lowest_points[2], body.shoulders[HR].leg.foot.p, min_z);
+            update_lowest(lowest_4_points[2], body.shoulders[HL].p, min_z);
+            update_lowest(lowest_4_points[2], body.shoulders[HL].leg.p, min_z);
+            update_lowest(lowest_4_points[2], body.shoulders[HL].leg.foot.p, min_z);
 
-            update_lowest(lowest_points[3], body.shoulders[HL].p, min_z);
-            update_lowest(lowest_points[3], body.shoulders[HL].leg.p, min_z);
-            update_lowest(lowest_points[3], body.shoulders[HL].leg.foot.p, min_z);
+            update_lowest(lowest_4_points[3], body.shoulders[HR].p, min_z);
+            update_lowest(lowest_4_points[3], body.shoulders[HR].leg.p, min_z);
+            update_lowest(lowest_4_points[3], body.shoulders[HR].leg.foot.p, min_z);
+
+            // find the 3 (4) lowest of 4
+            lowest_points.clear();
+            {
+                std::vector<Eigen::Vector3d> lowest_4_points_cpy = lowest_4_points;
+                while( lowest_points.size() < 3 ){
+                    auto lowest = std::min_element( lowest_4_points_cpy.begin(), lowest_4_points_cpy.end(), []( auto &a, auto &b ){ return a[2] < b[2];});
+                    lowest_points.push_back( *lowest );
+                    lowest_4_points_cpy.erase(lowest);
+                }
+                // add the 4th point if all are on the ground
+                if( lowest_4_points_cpy.size() >= 1 ){
+                    if( std::abs(lowest_4_points_cpy[0][2] - lowest_points[0][2]) < 0.002 ){
+                        lowest_points = lowest_4_points;
+                    }
+                }
+            }
+
 
             IPM_CeresPlaneFit fit_body(false);
             fit_body.add_points( lowest_points );
@@ -140,7 +158,9 @@ void Enut_Simulator::loop(){
             for( auto &p : lowest_points ){
                 p_offset += body.q._transformVector(p);
             }
-            body.tr = p_offset * -0.25;
+            body.tr = p_offset * -(1.0 / (double)lowest_points.size());
+            body.tr[0] = 0;
+            body.tr[1] = 0;
 
             // imu
             // roll
@@ -174,7 +194,7 @@ void Enut_Simulator::loop(){
             m_imu_yaw = m_imu_yaw - lpf.update( m_imu_yaw );
 
 
-            PT_INFO( "roll " << m_imu_roll << ", pitch " << m_imu_pitch << ", yaw " << m_imu_yaw );
+            //PT_INFO( "roll " << m_imu_roll << ", pitch " << m_imu_pitch << ", yaw " << m_imu_yaw );
 
         }
         p3t::sleep(dt);
@@ -202,10 +222,10 @@ void Enut_Simulator::draw()
 
             // draw ground
             std::vector<Eigen::Vector3d> gp;
-            gp.push_back( {-0.5,-0.5,0});
-            gp.push_back( {0.5,-0.5,0});
-            gp.push_back( {0.5,0.5,0});
-            gp.push_back( {-0.5,0.5,0});
+            gp.push_back( {-0.5,-0.5,-0.001});
+            gp.push_back( {0.5,-0.5,-0.001});
+            gp.push_back( {0.5,0.5,-0.001});
+            gp.push_back( {-0.5,0.5,-0.001});
 
             Eigen::AngleAxisd aa_g_r( m_ground_roll, Eigen::Vector3d(0,1,0) );
             Eigen::AngleAxisd aa_g_p( m_ground_pitch, Eigen::Vector3d(1,0,0) );
@@ -215,6 +235,13 @@ void Enut_Simulator::draw()
             }
             m_p3d->addRect2(gp,PLOT3D_DARK_GRAY,0.5,"ground");
 
+            // com triangle
+            std::vector<Eigen::Vector3d> com_tri;
+            for( auto &p : lowest_points )
+                com_tri.push_back( body.q._transformVector(p) + body.tr + draw_offset );
+            m_p3d->addPolygon( com_tri, PLOT3D_BLUE, 0.3, "CoM_triangle");
+
+            // draw body
             m_p3d->addCoordinateSys(body.tr + draw_offset, body.q, 0.03, "body");
 
             Eigen::Vector3d ph = body.q._transformVector(body.head.tr) + body.tr + draw_offset;
