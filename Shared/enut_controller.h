@@ -21,6 +21,7 @@ public:
     std::pair<bool, std::string> get_attitude(){ return {true,enut::Attitude_to_string(m_attitude)}; }
 
     bool set_body_rpy( double roll, double pitch, double yaw);
+    bool set_gait_width( double width );
 
 private:
     p3t::IPM_SectionedParmFile &m_db;
@@ -55,6 +56,8 @@ private:
     ceres::Solver::Summary summary;
 
     void reset_ceres_angles();
+
+    double m_gait_width;
 
     std::mutex m_mutex;
 

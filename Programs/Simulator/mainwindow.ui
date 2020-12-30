@@ -333,6 +333,22 @@
            <double>0.000000000000000</double>
           </property>
          </widget>
+         <widget class="QSlider" name="gait_width">
+          <property name="geometry">
+           <rect>
+            <x>140</x>
+            <y>330</y>
+            <width>160</width>
+            <height>16</height>
+           </rect>
+          </property>
+          <property name="maximum">
+           <number>60</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
         </widget>
         <widget class="QWidget" name="tab_2">
          <attribute name="title">

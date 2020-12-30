@@ -185,3 +185,8 @@ void MainWindow::on_cbConnect_clicked()
         }
     }
 }
+
+void MainWindow::on_gait_width_sliderMoved(int position)
+{
+    send_cmd( "CTRL:GAIT:WIDTH " + p3t::to_string((double)position * 0.001));
+}

@@ -14,7 +14,7 @@ Enut_Gait::Enut_Gait()
     m_gait_points.push_back({0,-0.318181818181818,0});
     m_gait_points.push_back({0,-0.409090909090909,0});
     m_gait_points.push_back({0,-0.5,0});
-    m_gait_points.push_back({0,-0.2,0.6});
+    m_gait_points.push_back({0,-0.4,0.6});
     m_gait_points.push_back({0,0.5, 1});
     m_gait_points.push_back({0,0.6, 0.2});
     m_gait_points.push_back({0,0.5, 0});

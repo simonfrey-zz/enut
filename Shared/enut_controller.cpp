@@ -29,6 +29,8 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
     m_body_pitch = 0;
     m_body_yaw = 0;
 
+    m_gait_width = 0;
+
     m_height = 0.12;
 
     init_ceres();
@@ -51,6 +53,8 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
     addCommand( {"CTRL","HEIGHT"}, &Enut_Controller::set_height, &Enut_Controller::get_height);
     addCommand( {"CTRL","ATTITUDE"}, &Enut_Controller::set_attitude, &Enut_Controller::get_attitude);
     addCommandWriteOnly( {"CTRL", "RPY"}, &Enut_Controller::set_body_rpy );
+
+    addCommandWriteOnly( {"CTRL", "GAIT", "WIDTH"}, &Enut_Controller::set_gait_width);
 
     start_helper_thread( &Enut_Controller::loop, this );
 }
@@ -76,6 +80,13 @@ bool Enut_Controller::set_body_rpy(double roll, double pitch, double yaw)
     m_body_roll = roll;
     m_body_pitch = pitch;
     m_body_yaw = yaw;
+    return true;
+}
+
+bool Enut_Controller::set_gait_width(double width)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_gait_width = width;
     return true;
 }
 
@@ -165,8 +176,8 @@ void Enut_Controller::loop()
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
-                const double step_height = (m_attitude == enut::walking) ? 0.02 : 0;
-                const double step_width = (m_attitude == enut::walking) ? 0.06 : 0;
+                const double step_height = (m_attitude == enut::walking) ? 0.03 : 0;
+                const double step_width = (m_attitude == enut::walking) ? m_gait_width : 0;
 
                 const double font_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.03;
 
@@ -231,6 +242,7 @@ void Enut_Controller::loop()
                 m_foot_pose[FR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
                 m_foot_pose[HL] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
                 m_foot_pose[HR] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
+
 
 
                 // shoulders
