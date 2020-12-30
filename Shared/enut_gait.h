@@ -9,6 +9,7 @@ public:
     Enut_Gait();
 
     Eigen::Vector3d get( double step, double width, double height );
+    double touch( double step, double width, double height );
 
 private:
     std::vector<Eigen::Vector3d> m_gait_points;

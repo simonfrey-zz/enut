@@ -190,3 +190,8 @@ void MainWindow::on_gait_width_sliderMoved(int position)
 {
     send_cmd( "CTRL:GAIT:WIDTH " + p3t::to_string((double)position * 0.001));
 }
+
+void MainWindow::on_gait_speed_sliderMoved(int position)
+{
+    send_cmd( "CTRL:GAIT:SPEED " + p3t::to_string((double)position * 0.01));
+}

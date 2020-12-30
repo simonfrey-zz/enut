@@ -30,6 +30,7 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
     m_body_yaw = 0;
 
     m_gait_width = 0;
+    m_gait_speed = 0;
 
     m_height = 0.12;
 
@@ -55,6 +56,7 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
     addCommandWriteOnly( {"CTRL", "RPY"}, &Enut_Controller::set_body_rpy );
 
     addCommandWriteOnly( {"CTRL", "GAIT", "WIDTH"}, &Enut_Controller::set_gait_width);
+    addCommandWriteOnly( {"CTRL", "GAIT", "SPEED"}, &Enut_Controller::set_gait_speed);
 
     start_helper_thread( &Enut_Controller::loop, this );
 }
@@ -87,6 +89,13 @@ bool Enut_Controller::set_gait_width(double width)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
     m_gait_width = width;
+    return true;
+}
+
+bool Enut_Controller::set_gait_speed(double speed)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_gait_speed = speed;
     return true;
 }
 
@@ -163,16 +172,16 @@ void Enut_Controller::loop()
 
                 // limit pid when walking
                 if( m_attitude == enut::walking ){
-                    pid_roll *= 0.05;
-                    pid_pitch *= 0.05;
-                    pid_yaw *= 0.05;
+                    pid_roll *= 0;//0.05;
+                    pid_pitch *= 0;//0.05;
+                    pid_yaw *= 0;//0.05;
                 }
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
                 Enut_Gait gait;
                 static double gait_step = 0;
-                gait_step += 0.04;
+                gait_step += 0.1*m_gait_speed;
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
@@ -182,10 +191,10 @@ void Enut_Controller::loop()
                 const double font_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.03;
 
                 // put foot points
-                m_foot_pose[FL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,font_feets_y,0) + body.shoulders[FL].tr;
-                m_foot_pose[FR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d( 0.02,font_feets_y,0) + body.shoulders[FR].tr;
-                m_foot_pose[HL] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
-                m_foot_pose[HR] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
+                m_foot_pose[FL] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d(-0.02,font_feets_y,0) + body.shoulders[FL].tr;
+                m_foot_pose[FR] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d( 0.02,font_feets_y,0) + body.shoulders[FR].tr;
+                m_foot_pose[HL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
+                m_foot_pose[HR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
 
                 /*
                 // put foot points
@@ -201,12 +210,19 @@ void Enut_Controller::loop()
                 m_foot_pose[HL][2] +=  pid_roll + pid_pitch;
 
                 // shoulders
+                Eigen::Vector3d com_shift(0,0,0);
+                const double com_shift_mag = 0.02;
+                com_shift += -com_shift_mag*gait.touch(gait_step+0.00, step_width, step_height) * body.shoulders[FL].tr;
+                com_shift += -com_shift_mag*gait.touch(gait_step+0.50, step_width, step_height) * body.shoulders[FR].tr;
+                com_shift += -com_shift_mag*gait.touch(gait_step+0.25, step_width, step_height) * body.shoulders[HL].tr;
+                com_shift += -com_shift_mag*gait.touch(gait_step+0.75, step_width, step_height) * body.shoulders[HR].tr;
+
                 Eigen::AngleAxisd aa_body_yaw( m_body_yaw + pid_yaw*M_PI/180.0 , Eigen::Vector3d(0,0,1) );
 
-                m_shoulder_pose[FL] = aa_body_yaw._transformVector(body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height));
-                m_shoulder_pose[FR] = aa_body_yaw._transformVector(body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height));
-                m_shoulder_pose[HL] = aa_body_yaw._transformVector(body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height));
-                m_shoulder_pose[HR] = aa_body_yaw._transformVector(body.shoulders[HR].tr + Eigen::Vector3d(0,0,m_height));
+                m_shoulder_pose[FL] = aa_body_yaw._transformVector(com_shift + body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height));
+                m_shoulder_pose[FR] = aa_body_yaw._transformVector(com_shift + body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height));
+                m_shoulder_pose[HL] = aa_body_yaw._transformVector(com_shift + body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height));
+                m_shoulder_pose[HR] = aa_body_yaw._transformVector(com_shift + body.shoulders[HR].tr + Eigen::Vector3d(0,0,m_height));
 
 
                 m_pates_models[FL]->set_foot_final( m_foot_pose[FL], m_shoulder_pose[FL] );

@@ -30,3 +30,12 @@ Eigen::Vector3d Enut_Gait::get(double step, double width, double height)
     p[1] *= width;
     return p;
 }
+
+double Enut_Gait::touch(double step, double, double)
+{
+    double frac = std::fmod( step, 1.0/16.0 ) * 16.0;
+    unsigned id = step * 16.0;
+
+    Eigen::Vector3d p = (m_gait_points[ (id % 16) ] * ( 1.0 - frac ) + m_gait_points[ (id+1) % 16 ] * (frac));
+    return p[2] > 0.001 ? 1 : 0;
+}

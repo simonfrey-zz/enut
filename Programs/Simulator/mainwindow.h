@@ -57,6 +57,8 @@ private slots:
 
     void on_gait_width_sliderMoved(int position);
 
+    void on_gait_speed_sliderMoved(int position);
+
 private:
     Ui::MainWindow *ui;
 

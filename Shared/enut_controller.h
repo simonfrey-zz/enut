@@ -22,6 +22,7 @@ public:
 
     bool set_body_rpy( double roll, double pitch, double yaw);
     bool set_gait_width( double width );
+    bool set_gait_speed( double speed );
 
 private:
     p3t::IPM_SectionedParmFile &m_db;
@@ -58,6 +59,7 @@ private:
     void reset_ceres_angles();
 
     double m_gait_width;
+    double m_gait_speed;
 
     std::mutex m_mutex;
 
