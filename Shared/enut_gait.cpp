@@ -1,23 +1,44 @@
 #include "enut_gait.h"
 
 Enut_Gait::Enut_Gait()
-{    
-    m_gait_points.push_back({0,0.5,0});
-    m_gait_points.push_back({0,0.409090909090909,	0});
-    m_gait_points.push_back({0,0.318181818181818, 0});
-    m_gait_points.push_back({0,0.227272727272727, 0});
-    m_gait_points.push_back({0,0.136363636363636, 0});
-    m_gait_points.push_back({0,0.045454545454545, 0});
-    m_gait_points.push_back({0,-0.045454545454546,0});
-    m_gait_points.push_back({0,-0.136363636363636,0});
-    m_gait_points.push_back({0,-0.227272727272727,0});
-    m_gait_points.push_back({0,-0.318181818181818,0});
-    m_gait_points.push_back({0,-0.409090909090909,0});
-    m_gait_points.push_back({0,-0.5,0});
-    m_gait_points.push_back({0,-0.4,0.6});
-    m_gait_points.push_back({0,0.5, 1});
-    m_gait_points.push_back({0,0.6, 0.2});
-    m_gait_points.push_back({0,0.5, 0});
+{
+    // 3/4
+#if 0
+    m_gait_points.push_back({0, 0.5000, 0});
+    m_gait_points.push_back({0, 0.4166, 0});
+    m_gait_points.push_back({0, 0.3333, 0});
+    m_gait_points.push_back({0, 0.2500, 0});
+    m_gait_points.push_back({0, 0.1666, 0});
+    m_gait_points.push_back({0, 0.0833, 0});
+    m_gait_points.push_back({0, 0.0000, 0});
+    m_gait_points.push_back({0,-0.0833, 0});
+    m_gait_points.push_back({0,-0.1666, 0});
+    m_gait_points.push_back({0,-0.2500, 0});
+    m_gait_points.push_back({0,-0.3333, 0});
+    m_gait_points.push_back({0,-0.4166, 0});
+    m_gait_points.push_back({0,-0.5000, 0});
+    m_gait_points.push_back({0,-0.4000, 0.6});
+    m_gait_points.push_back({0, 0.5000, 1.0});
+    m_gait_points.push_back({0, 0.6000, 0.2});
+#else
+    // 1 / 16
+    m_gait_points.push_back({0, 0.5000, 0});
+    m_gait_points.push_back({0, 0.4285, 0});
+    m_gait_points.push_back({0, 0.3571, 0});
+    m_gait_points.push_back({0, 0.2857, 0});
+    m_gait_points.push_back({0, 0.2142, 0});
+    m_gait_points.push_back({0, 0.1428, 0});
+    m_gait_points.push_back({0, 0.0714, 0});
+    m_gait_points.push_back({0, 0.0000, 0});
+    m_gait_points.push_back({0,-0.0714, 0});
+    m_gait_points.push_back({0,-0.1428, 0});
+    m_gait_points.push_back({0,-0.2142, 0});
+    m_gait_points.push_back({0,-0.2857, 0});
+    m_gait_points.push_back({0,-0.3571, 0});
+    m_gait_points.push_back({0,-0.4285, 0});
+    m_gait_points.push_back({0,-0.5000, 0});
+    m_gait_points.push_back({0, 0.0, 1});
+#endif
 }
 
 Eigen::Vector3d Enut_Gait::get(double step, double width, double height)

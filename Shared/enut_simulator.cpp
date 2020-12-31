@@ -122,7 +122,7 @@ void Enut_Simulator::loop(){
                 }
                 // add the 4th point if all are on the ground
                 if( lowest_4_points_cpy.size() >= 1 ){
-                    if( std::abs(lowest_4_points_cpy[0][2] - lowest_points[0][2]) < 0.002 ){
+                    if( std::abs(lowest_4_points_cpy[0][2] - lowest_points[0][2]) < 0.0005 ){
                         lowest_points = lowest_4_points;
                     }
                 }

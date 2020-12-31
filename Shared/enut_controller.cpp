@@ -172,9 +172,9 @@ void Enut_Controller::loop()
 
                 // limit pid when walking
                 if( m_attitude == enut::walking ){
-                    pid_roll *= 0;//0.05;
-                    pid_pitch *= 0;//0.05;
-                    pid_yaw *= 0;//0.05;
+                    pid_roll *= 0.1;//0.05;
+                    pid_pitch *= 0.1;//0.05;
+                    pid_yaw *= 0.1;//0.05;
                 }
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
@@ -185,16 +185,17 @@ void Enut_Controller::loop()
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
-                const double step_height = (m_attitude == enut::walking) ? 0.03 : 0;
+                const double step_height = (m_attitude == enut::walking) ? 0.007 : 0;
                 const double step_width = (m_attitude == enut::walking) ? m_gait_width : 0;
 
-                const double font_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.03;
+                const double front_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.03;
+                const double rear_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.00;
 
                 // put foot points
-                m_foot_pose[FL] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d(-0.02,font_feets_y,0) + body.shoulders[FL].tr;
-                m_foot_pose[FR] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d( 0.02,font_feets_y,0) + body.shoulders[FR].tr;
-                m_foot_pose[HL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
-                m_foot_pose[HR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
+                m_foot_pose[FL] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d(-0.02,front_feets_y,0) + body.shoulders[FL].tr;
+                m_foot_pose[FR] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d(+0.02,front_feets_y,0) + body.shoulders[FR].tr;
+                m_foot_pose[HL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,rear_feets_y,0) + body.shoulders[HL].tr;
+                m_foot_pose[HR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d(+0.02,rear_feets_y,0) + body.shoulders[HR].tr;
 
                 /*
                 // put foot points
@@ -211,7 +212,7 @@ void Enut_Controller::loop()
 
                 // shoulders
                 Eigen::Vector3d com_shift(0,0,0);
-                const double com_shift_mag = 0.02;
+                const double com_shift_mag = 0.0;
                 com_shift += -com_shift_mag*gait.touch(gait_step+0.00, step_width, step_height) * body.shoulders[FL].tr;
                 com_shift += -com_shift_mag*gait.touch(gait_step+0.50, step_width, step_height) * body.shoulders[FR].tr;
                 com_shift += -com_shift_mag*gait.touch(gait_step+0.25, step_width, step_height) * body.shoulders[HL].tr;
