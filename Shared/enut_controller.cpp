@@ -34,6 +34,11 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
     m_height = 0.12;
 
+    m_foot_pose_calibration[FL] = Eigen::Vector3d(0,0,0);
+    m_foot_pose_calibration[FR] = Eigen::Vector3d(0,0,0);
+    m_foot_pose_calibration[HL] = Eigen::Vector3d(0,0,0);
+    m_foot_pose_calibration[HR] = Eigen::Vector3d(0,0,0);
+
     init_ceres();
 
     m_db.lock();
@@ -57,6 +62,8 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
     addCommandWriteOnly( {"CTRL", "GAIT", "WIDTH"}, &Enut_Controller::set_gait_width);
     addCommandWriteOnly( {"CTRL", "GAIT", "SPEED"}, &Enut_Controller::set_gait_speed);
+
+    addCommandWriteOnly( {"CTRL", "CALIB"}, &Enut_Controller::set_foot_pose_calibration);
 
     start_helper_thread( &Enut_Controller::loop, this );
 }
@@ -96,6 +103,13 @@ bool Enut_Controller::set_gait_speed(double speed)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
     m_gait_speed = speed;
+    return true;
+}
+
+bool Enut_Controller::set_foot_pose_calibration(unsigned id, double x, double y, double z)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_foot_pose_calibration[id] = Eigen::Vector3d(x,y,z);
     return true;
 }
 
@@ -284,6 +298,36 @@ void Enut_Controller::loop()
                 if( speed < 1 ){
                     speed += 0.005;
                 }
+
+            }
+            else if( m_attitude == enut::calibration ){
+
+                // put foot points
+                m_foot_pose[FL] = m_foot_pose_calibration[FL] + body.shoulders[FL].tr;
+                m_foot_pose[FR] = m_foot_pose_calibration[FR] + body.shoulders[FR].tr;
+                m_foot_pose[HL] = m_foot_pose_calibration[HL] + body.shoulders[HL].tr;
+                m_foot_pose[HR] = m_foot_pose_calibration[HR] + body.shoulders[HR].tr;
+
+
+
+                // shoulders
+                m_shoulder_pose[FL] = body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height);
+                m_shoulder_pose[FR] = body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height);
+                m_shoulder_pose[HL] = body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height);
+                m_shoulder_pose[HR] = body.shoulders[HR].tr + Eigen::Vector3d(0,0,m_height);
+
+
+                m_pates_models[FL]->set_foot_final( m_foot_pose[FL], m_shoulder_pose[FL] );
+                m_pates_models[FR]->set_foot_final( m_foot_pose[FR], m_shoulder_pose[FR] );
+                m_pates_models[HL]->set_foot_final( m_foot_pose[HL], m_shoulder_pose[HL] );
+                m_pates_models[HR]->set_foot_final( m_foot_pose[HR], m_shoulder_pose[HR] );
+
+                ceres::Solve(options, &problem, &summary);
+
+                m_angles->set_angles( {shoulder_angles[FL], shoulder_angles[FR],shoulder_angles[HL],shoulder_angles[HR],
+                                       leg_angles[FL], leg_angles[FR],leg_angles[HL],leg_angles[HR],
+                                       foot_angles[FL], foot_angles[FR],foot_angles[HL],foot_angles[HR],
+                                       body.head.angle}, speed );
 
             }
 

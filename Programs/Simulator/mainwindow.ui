@@ -38,11 +38,11 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
-          <string>Tab 1</string>
+          <string>Main</string>
          </attribute>
          <widget class="QSpinBox" name="sbShoulders">
           <property name="geometry">
@@ -142,6 +142,11 @@
           <item>
            <property name="text">
             <string>walking</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>calibration</string>
            </property>
           </item>
          </widget>
@@ -366,10 +371,140 @@
           </property>
          </widget>
         </widget>
-        <widget class="QWidget" name="tab_2">
+        <widget class="QWidget" name="Calib">
          <attribute name="title">
-          <string>Tab 2</string>
+          <string>Calib</string>
          </attribute>
+         <widget class="QComboBox" name="cbCalibCahnnel">
+          <property name="geometry">
+           <rect>
+            <x>40</x>
+            <y>30</y>
+            <width>86</width>
+            <height>25</height>
+           </rect>
+          </property>
+          <item>
+           <property name="text">
+            <string>FL</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>FR</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>HL</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>HR</string>
+           </property>
+          </item>
+         </widget>
+         <widget class="QDoubleSpinBox" name="dsbCalixX">
+          <property name="geometry">
+           <rect>
+            <x>40</x>
+            <y>80</y>
+            <width>191</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="prefix">
+           <string>X </string>
+          </property>
+          <property name="suffix">
+           <string> mm</string>
+          </property>
+          <property name="minimum">
+           <double>-200.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>200.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.100000000000000</double>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="dsbCalixY">
+          <property name="geometry">
+           <rect>
+            <x>40</x>
+            <y>110</y>
+            <width>191</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="prefix">
+           <string>Y </string>
+          </property>
+          <property name="suffix">
+           <string> mm</string>
+          </property>
+          <property name="minimum">
+           <double>-200.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>200.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.100000000000000</double>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="dsbCalixZ">
+          <property name="geometry">
+           <rect>
+            <x>40</x>
+            <y>140</y>
+            <width>191</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="prefix">
+           <string>Z </string>
+          </property>
+          <property name="suffix">
+           <string> mm</string>
+          </property>
+          <property name="minimum">
+           <double>-200.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>200.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.100000000000000</double>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="dspHeight_2">
+          <property name="geometry">
+           <rect>
+            <x>40</x>
+            <y>200</y>
+            <width>161</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="prefix">
+           <string>height </string>
+          </property>
+          <property name="suffix">
+           <string> mm</string>
+          </property>
+          <property name="minimum">
+           <double>60.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>150.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>80.000000000000000</double>
+          </property>
+         </widget>
         </widget>
        </widget>
       </item>

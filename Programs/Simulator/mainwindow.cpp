@@ -146,6 +146,7 @@ void MainWindow::send_cmd(std::string cmd)
     }
 }
 
+
 void MainWindow::on_dspBodyRoll_valueChanged(double)
 {
     send_cmd( "CTRL:RPY " + p3t::to_string(ui->dspBodyRoll->value()*M_PI/180.) + " "
@@ -194,4 +195,50 @@ void MainWindow::on_gait_width_sliderMoved(int position)
 void MainWindow::on_gait_speed_sliderMoved(int position)
 {
     send_cmd( "CTRL:GAIT:SPEED " + p3t::to_string((double)position * 0.01));
+}
+
+
+
+void MainWindow::send_calib()
+{
+    int ch = 0;
+    if( ui->cbCalibCahnnel->currentText() == "FL" )
+        ch = FL;
+    else if( ui->cbCalibCahnnel->currentText() == "FR" )
+        ch = FR;
+    else if( ui->cbCalibCahnnel->currentText() == "HL" )
+        ch = HL;
+    else if( ui->cbCalibCahnnel->currentText() == "HR" )
+        ch = HR;
+
+    const double x = ui->dsbCalixX->value();
+    const double y = ui->dsbCalixY->value();
+    const double z = ui->dsbCalixZ->value();
+
+    send_cmd( "CTRL:CALIB " + p3t::to_string(ch) + " "  + p3t::to_string(x * 0.001) + " "  + p3t::to_string(y * 0.001) + " "  + p3t::to_string(z * 0.001) );
+}
+
+void MainWindow::on_cbCalibCahnnel_currentTextChanged(const QString &)
+{
+    send_calib();
+}
+
+void MainWindow::on_dsbCalixX_valueChanged(double)
+{
+    send_calib();
+}
+
+void MainWindow::on_dsbCalixY_valueChanged(double)
+{
+    send_calib();
+}
+
+void MainWindow::on_dsbCalixZ_valueChanged(double)
+{
+    send_calib();
+}
+
+void MainWindow::on_dspHeight_2_valueChanged(double arg1)
+{
+    send_cmd( "CTRL:HEIGHT " + p3t::to_string(arg1*0.001) );
 }

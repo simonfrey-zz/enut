@@ -9,7 +9,7 @@
 #define FR 2
 #define HR 3
 
-#define FOOT_LEN 0.064
+#define FOOT_LEN 0.060
 #define LEG_LEN 0.055
 #define SHOULDER_LEN 0.024
 #define LEGS_SPAN_X 0.076
@@ -24,6 +24,7 @@ enum Attitude {
     relax = 0,
     standing = 10,
     walking = 20,
+    calibration = 30,
 };
 
 std::string Attitude_to_string( Attitude a );

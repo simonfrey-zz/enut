@@ -9,3 +9,12 @@ Coucou
 ## Gait
 
 https://www.youtube.com/watch?v=w2WeRMiCCBk
+
+## Motors
+
+https://www.ebay.de/itm/273351769279
+
+## Mechanics
+
+### cycloidal
+https://www.youtube.com/c/PaulGouldRobotics/videos

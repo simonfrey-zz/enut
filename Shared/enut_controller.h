@@ -24,6 +24,8 @@ public:
     bool set_gait_width( double width );
     bool set_gait_speed( double speed );
 
+    bool set_foot_pose_calibration(unsigned id, double x, double y, double z );
+
 private:
     p3t::IPM_SectionedParmFile &m_db;
     enut::imu_iface * m_imu;
@@ -39,6 +41,8 @@ private:
     std::map<int, Eigen::Vector3d> m_foot_pose;
     std::map<int, Eigen::Vector3d> m_shoulder_pose;
     std::map<int, enut::Enut_Pate_model*> m_pates_models;
+
+    std::map<int, Eigen::Vector3d> m_foot_pose_calibration;
 
     IPM_PID * m_pid_roll;
     IPM_PID * m_pid_pitch;

@@ -59,6 +59,16 @@ private slots:
 
     void on_gait_speed_sliderMoved(int position);
 
+    void on_cbCalibCahnnel_currentTextChanged(const QString &arg1);
+
+    void on_dsbCalixX_valueChanged(double arg1);
+
+    void on_dsbCalixY_valueChanged(double arg1);
+
+    void on_dsbCalixZ_valueChanged(double arg1);
+
+    void on_dspHeight_2_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
 
@@ -79,6 +89,8 @@ private:
 
     void send_cmd( std::string cmd);
     std::mutex m_mutex;
+
+    void send_calib();
 };
 
 #endif // MAINWINDOW_H
