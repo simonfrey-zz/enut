@@ -27,6 +27,9 @@ public:
     bool set_foot_pose_calibration(unsigned id, double x, double y, double z );
     bool angle_mode_set_angle( unsigned id, double a );
 
+    bool com_mode_legup( int leg );
+    bool com_mode_shift( double x, double y );
+
 private:
     p3t::IPM_SectionedParmFile &m_db;
     enut::imu_iface * m_imu;
@@ -70,6 +73,10 @@ private:
 
     // angle mode
     enut::Angles m_angle_mode_angles;
+
+    // com calib mode
+    int m_com_mode_leg_up;
+    Eigen::Vector3d m_com_mode_shift;
 
 };
 
