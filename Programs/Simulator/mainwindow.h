@@ -69,6 +69,10 @@ private slots:
 
     void on_dspHeight_2_valueChanged(double arg1);
 
+    void on_sbAngleId_valueChanged(int arg1);
+
+    void on_dsbAngles_angle_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
 

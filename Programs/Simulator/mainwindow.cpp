@@ -98,6 +98,11 @@ void MainWindow::on_sbHead_valueChanged(int )
 
 void MainWindow::on_cbAttitude_currentTextChanged(const QString &arg1)
 {
+    if( arg1 == "calibration" ){
+        on_dspHeight_valueChanged( 75 );
+        ui->dspHeight->setValue( 75 );
+        ui->dspHeight_2->setValue( 75 );
+    }
     send_cmd( "CTRL:ATTITUDE " + arg1.toStdString() );
 }
 
@@ -241,4 +246,14 @@ void MainWindow::on_dsbCalixZ_valueChanged(double)
 void MainWindow::on_dspHeight_2_valueChanged(double arg1)
 {
     send_cmd( "CTRL:HEIGHT " + p3t::to_string(arg1*0.001) );
+}
+
+void MainWindow::on_sbAngleId_valueChanged(int)
+{
+    send_cmd( "CTRL:SET_ANGLE " + p3t::to_string(ui->sbAngleId->value()) + " " + p3t::to_string(ui->dsbAngles_angle->value()*M_PI/180.) );
+}
+
+void MainWindow::on_dsbAngles_angle_valueChanged(double)
+{
+    send_cmd( "CTRL:SET_ANGLE " + p3t::to_string(ui->sbAngleId->value()) + " " + p3t::to_string(ui->dsbAngles_angle->value()*M_PI/180.) );
 }
