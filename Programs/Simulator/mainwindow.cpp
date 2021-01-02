@@ -257,3 +257,18 @@ void MainWindow::on_dsbAngles_angle_valueChanged(double)
 {
     send_cmd( "CTRL:SET_ANGLE " + p3t::to_string(ui->sbAngleId->value()) + " " + p3t::to_string(ui->dsbAngles_angle->value()*M_PI/180.) );
 }
+
+void MainWindow::on_sbCOM_LegUp_valueChanged(int arg1)
+{
+    send_cmd( "CTRL:COM:LEGUP " + p3t::to_string(arg1) );
+}
+
+void MainWindow::on_dsbCOM_dx_valueChanged(double)
+{
+    send_cmd( "CTRL:COM:SHIFT " + p3t::to_string(ui->dsbCOM_dx->value()*0.001) + " " + p3t::to_string(ui->dsbCOM_dy->value()*0.001) );
+}
+
+void MainWindow::on_dsbCOM_dy_valueChanged(double)
+{
+    send_cmd( "CTRL:COM:SHIFT " + p3t::to_string(ui->dsbCOM_dx->value()*0.001) + " " + p3t::to_string(ui->dsbCOM_dy->value()*0.001) );
+}

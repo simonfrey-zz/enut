@@ -73,6 +73,12 @@ private slots:
 
     void on_dsbAngles_angle_valueChanged(double arg1);
 
+    void on_sbCOM_LegUp_valueChanged(int arg1);
+
+    void on_dsbCOM_dx_valueChanged(double arg1);
+
+    void on_dsbCOM_dy_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
 
