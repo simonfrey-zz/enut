@@ -10,6 +10,8 @@ std::string enut::Attitude_to_string(enut::Attitude a){
         return "walking";
     else if( a == calibration )
         return "calibration";
+    else if( a == angles )
+        return "angles";
     else
         return "relax";
 }
@@ -23,6 +25,8 @@ enut::Attitude enut::Attitude_from_string(std::string a){
         return walking;
     else if( a == "calibration" )
         return calibration;
+    else if( a == "angles" )
+        return angles;
     else
         return relax;
 }

@@ -34,10 +34,12 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
     m_height = 0.12;
 
-    m_foot_pose_calibration[FL] = Eigen::Vector3d(0,0,0);
-    m_foot_pose_calibration[FR] = Eigen::Vector3d(0,0,0);
-    m_foot_pose_calibration[HL] = Eigen::Vector3d(0,0,0);
-    m_foot_pose_calibration[HR] = Eigen::Vector3d(0,0,0);
+    m_db.lock();
+    m_foot_pose_calibration[FL] = Eigen::Vector3d(m_db.getd("FOOT_FL_offset_x",0.0), m_db.getd("FOOT_FL_offset_y",0.0), m_db.getd("FOOT_FL_offset_z",0.0));
+    m_foot_pose_calibration[FR] = Eigen::Vector3d(m_db.getd("FOOT_FR_offset_x",0.0), m_db.getd("FOOT_FR_offset_y",0.0), m_db.getd("FOOT_FR_offset_z",0.0));
+    m_foot_pose_calibration[HL] = Eigen::Vector3d(m_db.getd("FOOT_HL_offset_x",0.0), m_db.getd("FOOT_HL_offset_y",0.0), m_db.getd("FOOT_HL_offset_z",0.0));
+    m_foot_pose_calibration[HR] = Eigen::Vector3d(m_db.getd("FOOT_HR_offset_x",0.0), m_db.getd("FOOT_HR_offset_y",0.0), m_db.getd("FOOT_HR_offset_z",0.0));
+    m_db.unlock();
 
     init_ceres();
 
@@ -64,6 +66,8 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
     addCommandWriteOnly( {"CTRL", "GAIT", "SPEED"}, &Enut_Controller::set_gait_speed);
 
     addCommandWriteOnly( {"CTRL", "CALIB"}, &Enut_Controller::set_foot_pose_calibration);
+
+    addCommandWriteOnly( {"CTRL", "SET_ANGLE"}, &Enut_Controller::angle_mode_set_angle);
 
     start_helper_thread( &Enut_Controller::loop, this );
 }
@@ -110,6 +114,16 @@ bool Enut_Controller::set_foot_pose_calibration(unsigned id, double x, double y,
 {
     std::unique_lock<std::mutex> lock(m_mutex);
     m_foot_pose_calibration[id] = Eigen::Vector3d(x,y,z);
+    return true;
+}
+
+bool Enut_Controller::angle_mode_set_angle(unsigned id, double a)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    if( id >= 13 )
+        return false;
+    m_angle_mode_angles[id] = a;
+    PT_INFO("set " << id << " to " << a );
     return true;
 }
 
@@ -202,14 +216,11 @@ void Enut_Controller::loop()
                 const double step_height = (m_attitude == enut::walking) ? 0.007 : 0;
                 const double step_width = (m_attitude == enut::walking) ? m_gait_width : 0;
 
-                const double front_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.03;
-                const double rear_feets_y = (m_attitude == enut::walking) ? 0.00 : 0.00;
-
                 // put foot points
-                m_foot_pose[FL] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d(-0.02,front_feets_y,0) + body.shoulders[FL].tr;
-                m_foot_pose[FR] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d(+0.02,front_feets_y,0) + body.shoulders[FR].tr;
-                m_foot_pose[HL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,rear_feets_y,0) + body.shoulders[HL].tr;
-                m_foot_pose[HR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d(+0.02,rear_feets_y,0) + body.shoulders[HR].tr;
+                m_foot_pose[FL] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.00, step_width, step_height) + body.shoulders[FL].tr;
+                m_foot_pose[FR] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.50, step_width, step_height) + body.shoulders[FR].tr;
+                m_foot_pose[HL] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.25, step_width, step_height) + body.shoulders[HL].tr;
+                m_foot_pose[HR] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.75, step_width, step_height) + body.shoulders[HR].tr;
 
                 /*
                 // put foot points
@@ -257,49 +268,6 @@ void Enut_Controller::loop()
                 }
             }
 
-            else if( m_attitude == enut::walking && false ){
-
-                Enut_Gait gait;
-                static double gait_step = 0;
-                gait_step += 0.04;
-
-                body.head.angle = (90-imu.pitch)*M_PI/180.0;
-
-                const double step_height = 0.02;
-                const double step_width = 0.06;
-
-                // put foot points
-                m_foot_pose[FL] = gait.get(gait_step+0.25, step_width, step_height) + Eigen::Vector3d(-0.02,0.03,0) + body.shoulders[FL].tr;
-                m_foot_pose[FR] = gait.get(gait_step+0.75, step_width, step_height) + Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
-                m_foot_pose[HL] = gait.get(gait_step+0.50, step_width, step_height) + Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
-                m_foot_pose[HR] = gait.get(gait_step+0.00, step_width, step_height) + Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
-
-
-
-                // shoulders
-                m_shoulder_pose[FL] = body.shoulders[FL].tr + Eigen::Vector3d(0,0,m_height);
-                m_shoulder_pose[FR] = body.shoulders[FR].tr + Eigen::Vector3d(0,0,m_height);
-                m_shoulder_pose[HL] = body.shoulders[HL].tr + Eigen::Vector3d(0,0,m_height);
-                m_shoulder_pose[HR] = body.shoulders[HR].tr + Eigen::Vector3d(0,0,m_height);
-
-
-                m_pates_models[FL]->set_foot_final( m_foot_pose[FL], m_shoulder_pose[FL] );
-                m_pates_models[FR]->set_foot_final( m_foot_pose[FR], m_shoulder_pose[FR] );
-                m_pates_models[HL]->set_foot_final( m_foot_pose[HL], m_shoulder_pose[HL] );
-                m_pates_models[HR]->set_foot_final( m_foot_pose[HR], m_shoulder_pose[HR] );
-
-                ceres::Solve(options, &problem, &summary);
-
-                m_angles->set_angles( {shoulder_angles[FL], shoulder_angles[FR],shoulder_angles[HL],shoulder_angles[HR],
-                                       leg_angles[FL], leg_angles[FR],leg_angles[HL],leg_angles[HR],
-                                       foot_angles[FL], foot_angles[FR],foot_angles[HL],foot_angles[HR],
-                                       body.head.angle}, speed );
-
-                if( speed < 1 ){
-                    speed += 0.005;
-                }
-
-            }
             else if( m_attitude == enut::calibration ){
 
                 // put foot points
@@ -328,6 +296,12 @@ void Enut_Controller::loop()
                                        leg_angles[FL], leg_angles[FR],leg_angles[HL],leg_angles[HR],
                                        foot_angles[FL], foot_angles[FR],foot_angles[HL],foot_angles[HR],
                                        body.head.angle}, speed );
+
+            }
+
+            else if( m_attitude == enut::angles ){
+
+                m_angles->set_angles( m_angle_mode_angles, 1 );
 
             }
 
@@ -402,42 +376,42 @@ void Enut_Controller::init_ceres()
                               );
 
     // limits
-    problem.SetParameterLowerBound( &shoulder_angles[HR], 0, 0 );
+    problem.SetParameterLowerBound( &shoulder_angles[HR], 0, 0.05 );
     problem.SetParameterUpperBound( &shoulder_angles[HR], 0, 105*M_PI/180. );
 
-    problem.SetParameterLowerBound( &shoulder_angles[HL], 0, 0 );
+    problem.SetParameterLowerBound( &shoulder_angles[HL], 0, 0.05 );
     problem.SetParameterUpperBound( &shoulder_angles[HL], 0, 105*M_PI/180. );
 
-    problem.SetParameterLowerBound( &shoulder_angles[FR], 0, 0 );
+    problem.SetParameterLowerBound( &shoulder_angles[FR], 0, 0.05 );
     problem.SetParameterUpperBound( &shoulder_angles[FR], 0, 105*M_PI/180. );
 
-    problem.SetParameterLowerBound( &shoulder_angles[FL], 0, 0 );
+    problem.SetParameterLowerBound( &shoulder_angles[FL], 0, 0.05 );
     problem.SetParameterUpperBound( &shoulder_angles[FL], 0, 105*M_PI/180. );
 
-    problem.SetParameterLowerBound( &leg_angles[HR], 0, 0 );
-    problem.SetParameterUpperBound( &leg_angles[HR], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &leg_angles[HR], 0, 0.05 );
+    problem.SetParameterUpperBound( &leg_angles[HR], 0, 180*M_PI/180. - 0.05 );
 
-    problem.SetParameterLowerBound( &leg_angles[HL], 0, 0 );
-    problem.SetParameterUpperBound( &leg_angles[HL], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &leg_angles[HL], 0, 0.05 );
+    problem.SetParameterUpperBound( &leg_angles[HL], 0, 180*M_PI/180. - 0.05 );
 
-    problem.SetParameterLowerBound( &leg_angles[FR], 0, 0 );
-    problem.SetParameterUpperBound( &leg_angles[FR], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &leg_angles[FR], 0, 0.05 );
+    problem.SetParameterUpperBound( &leg_angles[FR], 0, 180*M_PI/180. - 0.05 );
 
-    problem.SetParameterLowerBound( &leg_angles[FL], 0, 0 );
-    problem.SetParameterUpperBound( &leg_angles[FL], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &leg_angles[FL], 0, 0.05 );
+    problem.SetParameterUpperBound( &leg_angles[FL], 0, 180*M_PI/180. - 0.05 );
 
 
-    problem.SetParameterLowerBound( &foot_angles[HR], 0, 0 );
-    problem.SetParameterUpperBound( &foot_angles[HR], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &foot_angles[HR], 0, 0.05 );
+    problem.SetParameterUpperBound( &foot_angles[HR], 0, 180*M_PI/180. - 0.05 );
 
-    problem.SetParameterLowerBound( &foot_angles[HL], 0, 0 );
-    problem.SetParameterUpperBound( &foot_angles[HL], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &foot_angles[HL], 0, 0.05 );
+    problem.SetParameterUpperBound( &foot_angles[HL], 0, 180*M_PI/180. - 0.05 );
 
-    problem.SetParameterLowerBound( &foot_angles[FR], 0, 0 );
-    problem.SetParameterUpperBound( &foot_angles[FR], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &foot_angles[FR], 0, 0.05 );
+    problem.SetParameterUpperBound( &foot_angles[FR], 0, 180*M_PI/180. - 0.05 );
 
-    problem.SetParameterLowerBound( &foot_angles[FL], 0, 0 );
-    problem.SetParameterUpperBound( &foot_angles[FL], 0, 180*M_PI/180. );
+    problem.SetParameterLowerBound( &foot_angles[FL], 0, 0.05 );
+    problem.SetParameterUpperBound( &foot_angles[FL], 0, 180*M_PI/180. - 0.05 );
 
     // Configure the solver.
     ceres::Solver::Options options;
