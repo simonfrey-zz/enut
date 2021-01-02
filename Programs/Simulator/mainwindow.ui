@@ -38,7 +38,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -147,6 +147,11 @@
           <item>
            <property name="text">
             <string>calibration</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>angles</string>
            </property>
           </item>
          </widget>
@@ -503,6 +508,52 @@
           </property>
           <property name="value">
            <double>80.000000000000000</double>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tab_2">
+         <attribute name="title">
+          <string>Angles</string>
+         </attribute>
+         <widget class="QSpinBox" name="sbAngleId">
+          <property name="geometry">
+           <rect>
+            <x>30</x>
+            <y>20</y>
+            <width>161</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="prefix">
+           <string>ch </string>
+          </property>
+          <property name="minimum">
+           <number>0</number>
+          </property>
+          <property name="maximum">
+           <number>15</number>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+         </widget>
+         <widget class="QDoubleSpinBox" name="dsbAngles_angle">
+          <property name="geometry">
+           <rect>
+            <x>30</x>
+            <y>60</y>
+            <width>161</width>
+            <height>26</height>
+           </rect>
+          </property>
+          <property name="prefix">
+           <string>angle </string>
+          </property>
+          <property name="maximum">
+           <double>180.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>90.000000000000000</double>
           </property>
          </widget>
         </widget>
