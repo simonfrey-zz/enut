@@ -25,6 +25,7 @@ public:
     bool set_gait_speed( double speed );
 
     bool set_foot_pose_calibration(unsigned id, double x, double y, double z );
+    bool angle_mode_set_angle( unsigned id, double a );
 
 private:
     p3t::IPM_SectionedParmFile &m_db;
@@ -66,6 +67,9 @@ private:
     double m_gait_speed;
 
     std::mutex m_mutex;
+
+    // angle mode
+    enut::Angles m_angle_mode_angles;
 
 };
 

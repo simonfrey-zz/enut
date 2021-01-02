@@ -6,3 +6,100 @@
 .YAW_PID.KI = 0.0
 .YAW_PID.KD = 0.01
 
+# FEET offsets
+.FOOT_FL_offset_x = -0.0124
+.FOOT_FL_offset_y = 0.004
+.FOOT_FL_offset_z = 0
+
+.FOOT_FR_offset_x = 0.0124
+.FOOT_FR_offset_y = 0.003
+.FOOT_FR_offset_z = -0.001
+
+.FOOT_HL_offset_x = -0.0146
+.FOOT_HL_offset_y = 0.002
+.FOOT_HL_offset_z = 0.001
+
+.FOOT_HR_offset_x = 0.0094
+.FOOT_HR_offset_y = 0.004
+.FOOT_HR_offset_z = -0.001
+
+
+# ch 12
+.HEAD_offset = 2
+.HEAD_scale = 1
+.HEAD_min = 30
+.HEAD_max = 180
+
+# ch 11
+.POIGNET_HR_offset = 2
+.POIGNET_HR_scale = 1.13924
+.POIGNET_HR_min = 10
+.POIGNET_HR_max = 140
+.POIGNET_HR_inverted = 1
+
+# ch 10
+.POIGNET_HL_offset = 24
+.POIGNET_HL_scale = 1.09756
+.POIGNET_HL_min = 10
+.POIGNET_HL_max = 140
+
+# ch 9
+.POIGNET_FR_offset = -10
+.POIGNET_FR_scale = 0.947368
+.POIGNET_FR_min = 10
+.POIGNET_FR_max = 140
+.POIGNET_FR_inverted = 1
+
+# ch 8
+.POIGNET_FL_offset = -3
+.POIGNET_FL_scale = 1.13924
+.POIGNET_FL_min = 10
+.POIGNET_FL_max = 140
+
+# ch 7
+.COUDE_HR_offset = 12
+.COUDE_HR_scale = 1.09756
+.COUDE_HR_min = 30
+.COUDE_HR_max = 180
+.COUDE_HR_inverted = 1
+
+# ch 6
+.COUDE_HL_offset = -2
+.COUDE_HL_scale = 1.111
+.COUDE_HL_min = 30
+.COUDE_HL_max = 180
+
+# ch 5
+.COUDE_FR_offset = 8
+.COUDE_FR_scale = 1.084337
+.COUDE_FR_min = 0
+.COUDE_FR_max = 166
+.COUDE_FR_inverted = 1
+
+# ch 4
+.COUDE_FL_offset = 6
+.COUDE_FL_scale = 1.153846
+.COUDE_FL_min = 0
+.COUDE_FL_max = 166
+
+# ch 0 
+.EPAULE_FL_offset = 18
+.EPAULE_FL_scale = 1.0714
+.EPAULE_FL_max = 100
+
+# ch 1
+.EPAULE_FR_offset = 12
+.EPAULE_FR_scale = 1.084337
+.EPAULE_FR_max = 100
+.EPAULE_FR_inverted = 1
+
+# ch 2
+.EPAULE_HL_offset = 21
+.EPAULE_HL_scale = 1.125
+.EPAULE_HL_max = 100
+
+# ch 3
+.EPAULE_HR_offset = 9
+.EPAULE_HR_scale = 1.0565
+.EPAULE_HR_max = 100
+.EPAULE_HR_inverted = 1

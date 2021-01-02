@@ -29,7 +29,7 @@ int main(int argc , char *argv[])
 
     ipm::modules::controller * controller = new ipm::modules::controller();
 
-    Enut_Servos * servo = new Enut_Servos();
+    Enut_Servos * servo = new Enut_Servos( config );
     if( servo->opened() == false ){
         delete servo;
         return -1;

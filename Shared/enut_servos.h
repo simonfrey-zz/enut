@@ -25,11 +25,12 @@
 #define HEAD 15
 
 #include "IPM_SCPI++/SCPIClassAdaptor.h"
+#include "IPM_Parameter/IPM_SectionedParmFile.h"
 
 class Enut_Servos : public ipm::modules::module, public PCA9685, public SCPIClassAdaptor<Enut_Servos>, public enut::angles_iface
 {
 public:
-    Enut_Servos();
+    Enut_Servos(p3t::IPM_SectionedParmFile &config);
 
     void set_angle( int, float );
 
@@ -40,6 +41,9 @@ public:
 
 
 private:
+
+    p3t::IPM_SectionedParmFile &m_db;
+
     struct Joint
     {
         float offset;
@@ -48,6 +52,7 @@ private:
         bool  invert;
         int pwm_min;
         int pwm_max;
+        float scale;
     };
 
     void loop();

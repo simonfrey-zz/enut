@@ -2,15 +2,53 @@
 #include <cmath>
 #include "PTDebug.h"
 
-Enut_Servos::Enut_Servos() :
+Enut_Servos::Enut_Servos( p3t::IPM_SectionedParmFile &config ) :
     ipm::modules::module("servo"),
     PCA9685(1,0x40),
-    SCPIClassAdaptor<Enut_Servos>(this, "SERVO")
+    SCPIClassAdaptor<Enut_Servos>(this, "SERVO"),
+    m_db( config )
 {
     for( int i = 0; i < 16; i++){
         m_joint[i] = {0,0,180,false,0,0};
     }
 
+    auto init_joint = [this](int id, std::string name ) -> void {
+
+        m_db.lock();
+        float offset = m_db.getd( name + "_offset", 0.0 );
+        float min = m_db.getd( name + "_min", 0.0 );
+        float max = m_db.getd( name + "_max", 180.0 );
+        bool inverted = m_db.getd( name + "_inverted", false );
+        float scale = m_db.getd( name + "_scale", 1.0 );
+        m_db.unlock();
+
+        m_joint[id].offset = offset*M_PI/180.;
+        m_joint[id].min = min*M_PI/180.f;
+        m_joint[id].max = max*M_PI/180.f;
+        m_joint[id].invert = inverted;
+        m_joint[id].pwm_min = 100;
+        m_joint[id].pwm_max = 512;
+        m_joint[id].scale = scale;
+    };
+
+    init_joint( COUDE_FL, "COUDE_FL" );
+    init_joint( COUDE_FR, "COUDE_FR" );
+    init_joint( COUDE_HL, "COUDE_HL" );
+    init_joint( COUDE_HR, "COUDE_HR" );
+
+    init_joint( POIGNET_FL, "POIGNET_FL" );
+    init_joint( POIGNET_FR, "POIGNET_FR" );
+    init_joint( POIGNET_HL, "POIGNET_HL" );
+    init_joint( POIGNET_HR, "POIGNET_HR" );
+
+    init_joint( EPAULE_FL, "EPAULE_FL" );
+    init_joint( EPAULE_FR, "EPAULE_FR" );
+    init_joint( EPAULE_HL, "EPAULE_HL" );
+    init_joint( EPAULE_HR, "EPAULE_HR" );
+
+    init_joint( HEAD, "HEAD" );
+
+    /*
     m_joint[COUDE_FL] = {0,0,180*M_PI/180.,false,110,467};
     m_joint[COUDE_HL] = {-2*M_PI/180.,0,180*M_PI/180.,false,107,475};
     m_joint[COUDE_HR] = {0,0,180*M_PI/180.,true,123,497};
@@ -27,6 +65,7 @@ Enut_Servos::Enut_Servos() :
     m_joint[EPAULE_FR] = {0,0,100*M_PI/180.,true,120,505};
 
     m_joint[HEAD] = {0,30*M_PI/180.,180*M_PI/180.,false,60,510};
+    */
 
     m_speed = 1;
 
@@ -46,7 +85,7 @@ void Enut_Servos::loop(){
         p3t::sleep(dt);
 
         // 0.12 sec / 60 degree -> 500 deg/s
-        const double max_angle_per_dt = m_speed * 400.0 * (M_PI/180.0) * dt;
+        const double max_angle_per_dt = m_speed * 600.0 * (M_PI/180.0) * dt;
         for( unsigned int i = 0; i < 13; i++ ){
             if( std::abs( m_soll_angles[i] - m_ist_angles[i] ) > max_angle_per_dt ){
                 if( m_soll_angles[i] > m_ist_angles[i] )
@@ -120,7 +159,7 @@ void Enut_Servos::turn_on()
 int Enut_Servos::map(int channel, float angle)
 {
     const float a_min = 0;
-    const float a_max = M_PI;//180;
+    const float a_max = m_joint[channel].scale*M_PI;//180;
     const float v_min = m_joint[channel].pwm_min;//102;
     const float v_max = m_joint[channel].pwm_max;//512;
     return (v_max-v_min)*(angle-a_min) / (a_max-a_min) + v_min;

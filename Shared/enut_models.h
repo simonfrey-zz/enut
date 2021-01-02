@@ -25,6 +25,7 @@ enum Attitude {
     standing = 10,
     walking = 20,
     calibration = 30,
+    angles = 40,
 };
 
 std::string Attitude_to_string( Attitude a );
