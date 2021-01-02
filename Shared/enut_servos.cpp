@@ -9,7 +9,7 @@ Enut_Servos::Enut_Servos( p3t::IPM_SectionedParmFile &config ) :
     m_db( config )
 {
     for( int i = 0; i < 16; i++){
-        m_joint[i] = {0,0,180,false,0,0};
+        m_joint[i] = {0,0,180,false,0,0,1};
     }
 
     auto init_joint = [this](int id, std::string name ) -> void {

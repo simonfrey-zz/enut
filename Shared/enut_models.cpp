@@ -12,6 +12,8 @@ std::string enut::Attitude_to_string(enut::Attitude a){
         return "calibration";
     else if( a == angles )
         return "angles";
+    else if( a == com_calib )
+        return "com_calib";
     else
         return "relax";
 }
@@ -27,6 +29,8 @@ enut::Attitude enut::Attitude_from_string(std::string a){
         return calibration;
     else if( a == "angles" )
         return angles;
+    else if( a == "com_calib" )
+        return com_calib;
     else
         return relax;
 }
