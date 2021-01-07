@@ -12,7 +12,7 @@
 class Enut_Controller: public ipm::modules::module, public SCPIClassAdaptor<Enut_Controller>
 {
 public:
-    Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_iface * imu, enut::angles_iface * angles );
+    Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_iface * imu, enut::angles_iface * angles, enut::sonar_iface * sonar );
 
     bool set_height( double height );
     std::pair<bool,double> get_height(){return {true,m_height}; }
@@ -23,6 +23,8 @@ public:
     bool set_body_rpy( double roll, double pitch, double yaw);
     bool set_gait_width( double width );
     bool set_gait_speed( double speed );
+    bool set_gait_direction( double angle );
+    bool set_gait_steering( double angle );
 
     bool set_foot_pose_calibration(unsigned id, double x, double y, double z );
     bool angle_mode_set_angle( unsigned id, double a );
@@ -34,6 +36,7 @@ private:
     p3t::IPM_SectionedParmFile &m_db;
     enut::imu_iface * m_imu;
     enut::angles_iface * m_angles;
+    enut::sonar_iface * m_sonar;
     double m_height;
     enut::Attitude m_attitude;
     enut::Body body;
@@ -66,8 +69,12 @@ private:
 
     void reset_ceres_angles();
 
+    void reset_pids();
+
     double m_gait_width;
     double m_gait_speed;
+    double m_gait_direction;
+    double m_gait_steering;
 
     std::mutex m_mutex;
 

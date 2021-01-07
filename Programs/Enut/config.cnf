@@ -1,8 +1,8 @@
 .PID.KP = 0.0
-.PID.KI = 0.22
-.PID.KD = 0.015
+.PID.KI = 0.10
+.PID.KD = 0.005
 
-.YAW_PID.KP = 0.55
+.YAW_PID.KP = 0.45
 .YAW_PID.KI = 0.0
 .YAW_PID.KD = 0.01
 
@@ -25,7 +25,7 @@
 
 
 # ch 12
-.HEAD_offset = 2
+.HEAD_offset = -8
 .HEAD_scale = 1
 .HEAD_min = 30
 .HEAD_max = 180

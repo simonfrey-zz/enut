@@ -23,6 +23,11 @@ public:
     virtual void turn_on() = 0;
 };
 
+class sonar_iface {
+public:
+    virtual double get_distance() = 0;
+};
+
 }
 
 #endif // ENUT_IFACES_H

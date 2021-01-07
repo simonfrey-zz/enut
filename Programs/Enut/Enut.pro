@@ -60,7 +60,8 @@ SOURCES += \
     ../../Shared/pca9685.cpp \
     ../../Shared/mpuXX50.cpp \
     ../../Shared/enut_servos.cpp \
-    ../../Shared/enut_imu.cpp
+    ../../Shared/enut_imu.cpp \
+    ../../Shared/enut_sonar.cpp
 
 HEADERS += \
     ../../external/IPM_Shared/external/p3t/IPM_SCPI/Remote/IPM_SCPI_Remote.h \
@@ -73,7 +74,8 @@ HEADERS += \
     ../../Shared/pca9685.h \
     ../../Shared/mpuXX50.h \
     ../../Shared/enut_servos.h \
-    ../../Shared/enut_imu.h
+    ../../Shared/enut_imu.h \
+    ../../Shared/enut_sonar.h
 
 SOURCES *= \
         PTS_BinaryIO/PTS_BinaryIO.cpp \
@@ -94,5 +96,6 @@ unix {
     LIBS *= -lblas
     LIBS *= -llapack
     LIBS *= -lcxsparse
+    LIBS *= -lwiringPi
 }
 

@@ -4,12 +4,13 @@
 
 #define IMU_ROLL_OFFSET (2.5*M_PI/180.0)
 
-Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_iface * imu, enut::angles_iface * angles) :
+Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_iface * imu, enut::angles_iface * angles, enut::sonar_iface * sonar) :
     ipm::modules::module("control"),
     SCPIClassAdaptor<Enut_Controller>(this,"controller"),
     m_db( config ),
     m_imu( imu ),
     m_angles( angles ),
+    m_sonar( sonar ),
     problem( problem_options )
 {
 
@@ -31,6 +32,8 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
     m_gait_width = 0;
     m_gait_speed = 0;
+    m_gait_direction = 0;
+    m_gait_steering = 0;
 
     m_com_mode_leg_up = -1;
     m_com_mode_shift = Eigen::Vector3d(0,0,0);
@@ -46,20 +49,7 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
     init_ceres();
 
-    m_db.lock();
-    const double kp = m_db.getd(".PID.KP", 0.0 );
-    const double ki = m_db.getd(".PID.KI", 0.0 );
-    const double kd = m_db.getd(".PID.KD", 0.0 );
-    m_pid_roll = new IPM_PID( kp, ki, kd );
-    m_pid_pitch = new IPM_PID( kp, ki, kd );
-    m_db.unlock();
-
-    m_db.lock();
-    m_pid_yaw = new IPM_PID( m_db.getd(".YAW_PID.KP", 0.0 ),
-                             m_db.getd(".YAW_PID.KI", 0.3 ),
-                             m_db.getd(".YAW_PID.KD", 0.0 )
-                             );
-    m_db.unlock();
+    reset_pids();
 
     addCommand( {"CTRL","HEIGHT"}, &Enut_Controller::set_height, &Enut_Controller::get_height);
     addCommand( {"CTRL","ATTITUDE"}, &Enut_Controller::set_attitude, &Enut_Controller::get_attitude);
@@ -67,6 +57,8 @@ Enut_Controller::Enut_Controller(p3t::IPM_SectionedParmFile &config, enut::imu_i
 
     addCommandWriteOnly( {"CTRL", "GAIT", "WIDTH"}, &Enut_Controller::set_gait_width);
     addCommandWriteOnly( {"CTRL", "GAIT", "SPEED"}, &Enut_Controller::set_gait_speed);
+    addCommandWriteOnly( {"CTRL", "GAIT", "DIR"}, &Enut_Controller::set_gait_direction);
+    addCommandWriteOnly( {"CTRL", "GAIT", "STEERING"}, &Enut_Controller::set_gait_steering);
 
     addCommandWriteOnly( {"CTRL", "CALIB"}, &Enut_Controller::set_foot_pose_calibration);
 
@@ -116,6 +108,20 @@ bool Enut_Controller::set_gait_speed(double speed)
     return true;
 }
 
+bool Enut_Controller::set_gait_direction(double angle)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_gait_direction = angle;
+    return true;
+}
+
+bool Enut_Controller::set_gait_steering(double angle)
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_gait_steering = angle;
+    return true;
+}
+
 bool Enut_Controller::set_foot_pose_calibration(unsigned id, double x, double y, double z)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
@@ -147,6 +153,28 @@ bool Enut_Controller::com_mode_shift(double x, double y)
     return true;
 }
 
+void Enut_Controller::reset_pids(){
+
+    delete m_pid_roll;
+    delete m_pid_pitch;
+    delete m_pid_yaw;
+
+    m_db.lock();
+    const double kp = m_db.getd(".PID.KP", 0.0 );
+    const double ki = m_db.getd(".PID.KI", 0.0 );
+    const double kd = m_db.getd(".PID.KD", 0.0 );
+    m_pid_roll = new IPM_PID( kp, ki, kd );
+    m_pid_pitch = new IPM_PID( kp, ki, kd );
+    m_db.unlock();
+
+    m_db.lock();
+    m_pid_yaw = new IPM_PID( m_db.getd(".YAW_PID.KP", 0.0 ),
+                             m_db.getd(".YAW_PID.KI", 0.3 ),
+                             m_db.getd(".YAW_PID.KD", 0.0 )
+                             );
+    m_db.unlock();
+
+}
 
 void Enut_Controller::loop()
 {
@@ -180,13 +208,17 @@ void Enut_Controller::loop()
                     m_angles->set_angles( def_angles, speed );
                     p3t::sleep(1);
                 }
+
+                if( m_attitude == enut::standing ){
+                    reset_pids();
+                }
             }
             prev_attitude = m_attitude;
 
             if( speed > 1 )
                 speed = 1;
-            if( speed < 0.2 )
-                speed = 0.2;
+            if( speed < 0.001 )
+                speed = 0.001;
 
             if( std::abs(imu.pitch) > 60 || std::abs(imu.roll) > 60 ){
                 m_attitude = enut::relax;
@@ -194,7 +226,7 @@ void Enut_Controller::loop()
             }
 
             if( m_attitude == enut::relax ){
-                speed = 0.2;
+                speed = 0.1;
 
                 reset_ceres_angles();
 
@@ -220,35 +252,56 @@ void Enut_Controller::loop()
 
                 // limit pid when walking
                 if( m_attitude == enut::walking ){
-                    pid_roll *= 0.1;//0.05;
-                    pid_pitch *= 0.1;//0.05;
-                    pid_yaw *= 0.1;//0.05;
+                    pid_roll *= 0.0;//0.05;
+                    pid_pitch *= 0.0;//0.05;
+                    pid_yaw *= 0.0;//0.05;
                 }
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
+                // obstacle
+                double gait_speed_local = m_gait_speed;
+                if( m_sonar->get_distance() < 0.3 ){
+                    double p = m_sonar->get_distance() - 0.15;
+                    if( p < 0 ){
+                        gait_speed_local = p * 6;
+                    }
+                    else {
+                        gait_speed_local = (p/0.15)  * m_gait_speed;
+                    }
+                }
+
                 Enut_Gait gait;
                 static double gait_step = 0;
-                gait_step += 0.1*m_gait_speed;
+                gait_step += 0.05*gait_speed_local;
+
+                m_gait_width = std::min( 0.06, ((std::abs(gait_speed_local) / 0.3)*0.06));
+                const double gait_height = std::min( 0.02, ((std::abs(gait_speed_local) / 0.2)*0.015));
 
                 body.head.angle = (90-imu.pitch)*M_PI/180.0;
 
-                const double step_height = (m_attitude == enut::walking) ? 0.007 : 0;
+                const double step_height = (m_attitude == enut::walking) ? gait_height : 0;
                 const double step_width = (m_attitude == enut::walking) ? m_gait_width : 0;
 
-                // put foot points
-                m_foot_pose[FL] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.00, step_width, step_height) + body.shoulders[FL].tr;
-                m_foot_pose[FR] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.50, step_width, step_height) + body.shoulders[FR].tr;
-                m_foot_pose[HL] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.25, step_width, step_height) + body.shoulders[HL].tr;
-                m_foot_pose[HR] = m_foot_pose_calibration[FL] + gait.get(gait_step+0.75, step_width, step_height) + body.shoulders[HR].tr;
+                // gait direction
+                std::map<int, Eigen::Vector3d> m_foot_gait;
+                Eigen::AngleAxisd aa_gait_dir = Eigen::AngleAxisd( m_gait_direction, Eigen::Vector3d(0,0,1));
+                Eigen::AngleAxisd aa_gait_steering = Eigen::AngleAxisd( m_gait_steering, Eigen::Vector3d(0,0,1));
+                //m_foot_gait[FL] = aa_gait_steering._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.00, step_width, step_height)));
+                //m_foot_gait[FR] = aa_gait_steering._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.50, step_width, step_height)));
+                //m_foot_gait[HL] = aa_gait_steering.inverse()._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.25, step_width, step_height)));
+                //m_foot_gait[HR] = aa_gait_steering.inverse()._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.75, step_width, step_height)));
 
-                /*
+                m_foot_gait[FL] = aa_gait_steering._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.00, step_width, step_height)));
+                m_foot_gait[FR] = aa_gait_steering._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.50, step_width, step_height)));
+                m_foot_gait[HL] = aa_gait_steering.inverse()._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.50, step_width, step_height)));
+                m_foot_gait[HR] = aa_gait_steering.inverse()._transformVector( aa_gait_dir._transformVector(gait.get(gait_step+0.00, step_width, step_height)));
+
                 // put foot points
-                m_foot_pose[FL] = Eigen::Vector3d(-0.02,0.03,0) + body.shoulders[FL].tr;
-                m_foot_pose[FR] = Eigen::Vector3d( 0.02,0.03,0) + body.shoulders[FR].tr;
-                m_foot_pose[HL] = Eigen::Vector3d(-0.02,0.00,0) + body.shoulders[HL].tr;
-                m_foot_pose[HR] = Eigen::Vector3d( 0.02,0.00,0) + body.shoulders[HR].tr;
-                */
+                m_foot_pose[FL] = m_foot_pose_calibration[FL] + m_foot_gait[FL] + body.shoulders[FL].tr;
+                m_foot_pose[FR] = m_foot_pose_calibration[FR] + m_foot_gait[FR] + body.shoulders[FR].tr;
+                m_foot_pose[HL] = m_foot_pose_calibration[HL] + m_foot_gait[HL] + body.shoulders[HL].tr;
+                m_foot_pose[HR] = m_foot_pose_calibration[HR] + m_foot_gait[HR] + body.shoulders[HR].tr;
 
                 m_foot_pose[FL][2] +=  pid_roll - pid_pitch;
                 m_foot_pose[FR][2] += -pid_roll - pid_pitch;
@@ -284,7 +337,7 @@ void Enut_Controller::loop()
                                        body.head.angle}, speed );
 
                 if( speed < 1 ){
-                    speed += 0.005;
+                    speed += 0.001;
                 }
             }
 

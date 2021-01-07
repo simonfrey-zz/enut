@@ -4,6 +4,7 @@
 #include "PTS_System/PTS_Clocks.h"
 #include "Shared/enut_servos.h"
 #include "Shared/enut_imu.h"
+#include "Shared/enut_sonar.h"
 #include "Shared/enut_controller.h"
 
 #include "ModulesChain/ModuleController.h"
@@ -41,6 +42,9 @@ int main(int argc , char *argv[])
         return -1;
     }
 
+    Enut_Sonar * sonar = new Enut_Sonar( config );
+
+
     // collect all SCPIs
     SCPIClassAdaptorCollection all_scpis("SCPI_COLLECTION");
 
@@ -48,13 +52,14 @@ int main(int argc , char *argv[])
     // scpi server
     IPM_SCPIpp_Server2 * scpi_server = new IPM_SCPIpp_Server2("scpi_server", all_scpis, 50010, true, false );
 
-    auto enut_controller = new Enut_Controller( config, imu, servo );
+    auto enut_controller = new Enut_Controller( config, imu, servo, sonar );
 
     all_scpis.addAdaptor( enut_controller );
 
     controller->register_module( "l", scpi_server );
     controller->register_module( "l", servo );
     controller->register_module( "l", imu );
+    controller->register_module( "l", sonar );
     controller->register_module( "l", enut_controller );
 
     controller->start_module();
